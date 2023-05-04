@@ -1,8 +1,10 @@
 package model
 
+import "github.com/jinzhu/gorm"
+
 type User struct {
-	ID        uint   
-	Name      string `json:"name"`
-	Telephone string `json:"telephone"`
-	Password  string `json:"password"`
+	gorm.Model
+	Name      string `gorm:"type:varchar(20);not null"`
+	Telephone string `gorm:"type:varchar(11);not null"`
+	Password  string `gorm:"size:255;not null"`
 }

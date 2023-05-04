@@ -1,3 +1,4 @@
+// 封装返回的信息和状态码
 package response
 
 import (

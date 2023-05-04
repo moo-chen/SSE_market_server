@@ -1,3 +1,4 @@
+// token结构体
 package dto
 
 import "loginTest/model"

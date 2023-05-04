@@ -1,3 +1,4 @@
+// 返回token的文件，不用管，要看也行。模板写法来着，至于为什么，我也不是很懂
 package common
 
 import (

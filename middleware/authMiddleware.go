@@ -1,9 +1,8 @@
+// 返回token中间件，不用管，要看也行。模板写法来着，至于为什么，我也不是很懂
 package middleware
 
 import (
-	"database/sql"
 	"github.com/gin-gonic/gin"
-	"log"
 	"loginTest/common"
 	"loginTest/model"
 	"net/http"
@@ -31,15 +30,13 @@ func AuthMiddleware() gin.HandlerFunc {
 		userId := claims.UserId
 		db := common.GetDB()
 		var user model.User
-		err = db.QueryRow("SELECT * FROM User WHERE ID = ?",userId).Scan(&user.ID, &user.Name, &user.Telephone, &user.Password)
+		db.First(&user,userId)
 		//用户不存在
-		if err == sql.ErrNoRows {
+		if user.ID == 0{
 			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足"})
 			ctx.Abort()
 			return
-		} else if err != nil {
-			log.Fatal(err)
-		}
+		} 
 		//用户存在，将user的信息写入上下文
 		ctx.Set("user",user)
 		ctx.Next()
