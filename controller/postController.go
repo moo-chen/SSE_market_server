@@ -89,6 +89,7 @@ type PostResponse struct {
     PostTime time.Time
 	IsLiked bool
 }
+
 type BrowseMeg struct {
 	UserTelephone string
 	Partition string
@@ -169,4 +170,51 @@ func UpdateLike(c *gin.Context) {
 			db.Create(&newLike)
 		}
 	}
+}
+
+type PostDetailsResponse struct {
+	PostID uint
+    UserName string
+    Title string
+    Content string
+    Like int
+    Comment int
+    PostTime time.Time
+	IsLiked bool
+}
+
+type PostDetailsMsg struct {
+	UserTelephone string
+	PostID uint
+} 
+
+func ShowDetails(c *gin.Context) {
+	db := common.GetDB()
+	var requestPostDetailsMsg PostDetailsMsg
+	c.Bind(&requestPostDetailsMsg)
+	userTelephone := requestPostDetailsMsg.UserTelephone
+	postID := requestPostDetailsMsg.PostID
+	var temUser model.User
+    db.Where("telephone = ?", userTelephone).First(&temUser)
+	isLiked := false
+	var like model.Like
+    db.Where("user_id = ? AND post_id = ?", temUser.ID, postID).First(&like)
+    if like.ID != 0 {
+        isLiked = true
+    }
+	var post model.Post
+	db.Where("id = ?", postID).First(&post)
+	var user model.User
+    db.Where("id = ?", post.UserID).First(&user)
+	postDetailsResponse := PostDetailsResponse{
+		PostID: post.ID,
+        UserName: user.Name,
+        Title: post.Title,
+        Content: post.Content,
+        Like: post.Like,
+        Comment: post.Comment,
+        PostTime: post.PostTime,
+		IsLiked: isLiked,
+    }
+	c.JSON(http.StatusOK, postDetailsResponse)
 }
