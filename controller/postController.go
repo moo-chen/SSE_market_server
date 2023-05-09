@@ -82,6 +82,7 @@ func Post(c *gin.Context) {
 type PostResponse struct {
 	PostID uint
     UserName string
+	UserTelephone string
     Title string
     Content string
     Like int
@@ -123,6 +124,7 @@ func Browse(c *gin.Context) {
 		postResponse := PostResponse{
 			PostID: post.ID,
             UserName: user.Name,
+			UserTelephone: user.Telephone,
             Title: post.Title,
             Content: post.Content,
             Like: post.Like,
@@ -175,6 +177,7 @@ func UpdateLike(c *gin.Context) {
 type PostDetailsResponse struct {
 	PostID uint
     UserName string
+	UserTelephone string
     Title string
     Content string
     Like int
@@ -209,6 +212,7 @@ func ShowDetails(c *gin.Context) {
 	postDetailsResponse := PostDetailsResponse{
 		PostID: post.ID,
         UserName: user.Name,
+		UserTelephone: userTelephone,
         Title: post.Title,
         Content: post.Content,
         Like: post.Like,
