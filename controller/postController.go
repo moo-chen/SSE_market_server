@@ -212,7 +212,7 @@ func ShowDetails(c *gin.Context) {
 	postDetailsResponse := PostDetailsResponse{
 		PostID: post.ID,
         UserName: user.Name,
-		UserTelephone: userTelephone,
+		UserTelephone: user.Telephone,
         Title: post.Title,
         Content: post.Content,
         Like: post.Like,
