@@ -1,5 +1,4 @@
 package main
-
 import (
 	"loginTest/common"
 	"os"
@@ -8,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	
 )
+
 func main() {
 	InitConfig()
 	db := common.InitDB()
