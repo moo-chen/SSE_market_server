@@ -29,16 +29,16 @@ func AuthMiddleware() gin.HandlerFunc {
 		//验证通过后获取claims中的userId
 		userId := claims.UserId
 		db := common.GetDB()
-		var user model.User
-		db.First(&user,userId)
+		user := model.User{}
+		db.Where("userID =?", userId).First(&user)
 		//用户不存在
-		if user.ID == 0{
+		if user.Userid == 0 {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足"})
 			ctx.Abort()
 			return
-		} 
+		}
 		//用户存在，将user的信息写入上下文
-		ctx.Set("user",user)
+		ctx.Set("user", user)
 		ctx.Next()
 	}
 }

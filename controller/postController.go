@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/gin-gonic/gin"
 	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
@@ -8,14 +9,13 @@ import (
 	"net/http"
 	"time"
 	"unicode/utf8"
-	"github.com/gin-gonic/gin"
 )
 
 type PostMsg struct {
 	UserTelephone string
-	Title string
-	Content string
-	Partition string
+	Title         string
+	Content       string
+	Partition     string
 }
 
 func Post(c *gin.Context) {
@@ -26,7 +26,7 @@ func Post(c *gin.Context) {
 	userTelephone := requestPostMsg.UserTelephone
 	title := requestPostMsg.Title
 	content := requestPostMsg.Content
-	partition :=requestPostMsg.Partition
+	partition := requestPostMsg.Partition
 	// 验证数据
 	if !isTelephoneExist(db, userTelephone) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "用户不存在")
@@ -36,12 +36,12 @@ func Post(c *gin.Context) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "标题不能为空")
 		return
 	}
-	
+
 	if utf8.RuneCountInString(title) > 15 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "标题最多为15个字")
 		return
 	}
-	
+
 	if len(content) == 0 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "内容不能为空")
 		return
@@ -51,7 +51,7 @@ func Post(c *gin.Context) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "内容最多为5000个字")
 		return
 	}
-	
+
 	if len(partition) == 0 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "分区不能为空")
 		return
@@ -61,39 +61,37 @@ func Post(c *gin.Context) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "标题或内容含有不良信息,请重新编辑")
 		return
 	}
-	
+
 	var user model.User
-    db.Where("telephone = ?", userTelephone).First(&user)
+	db.Where("phone = ?", userTelephone).First(&user)
 
 	newPost := model.Post{
-		UserID: int(user.ID),
+		Userid:    int(user.Userid),
 		Partition: partition,
-		Title: title,
-		Content: content,
-		Like: 0,
-		Comment: 0,
-		Heat: 0,
-		PostTime: time.Now(),
+		Title:     title,
+		Ptext:     content,
+		Heat:      0,
+		PostTime:  time.Now(),
 	}
 	db.Create(&newPost)
 	response.Response(c, http.StatusOK, 200, nil, "发帖成功")
 }
 
 type PostResponse struct {
-	PostID uint
-    UserName string
+	PostID        uint
+	UserName      string
 	UserTelephone string
-    Title string
-    Content string
-    Like int
-    Comment int
-    PostTime time.Time
-	IsLiked bool
+	Title         string
+	Content       string
+	Like          int
+	Comment       int
+	PostTime      time.Time
+	IsLiked       bool
 }
 
 type BrowseMeg struct {
 	UserTelephone string
-	Partition string
+	Partition     string
 }
 
 func Browse(c *gin.Context) {
@@ -104,34 +102,34 @@ func Browse(c *gin.Context) {
 	userTelephone := requestBrowseMeg.UserTelephone
 	partition := requestBrowseMeg.Partition
 	var temUser model.User
-    db.Where("telephone = ?", userTelephone).First(&temUser)
+	db.Where("phone = ?", userTelephone).First(&temUser)
 	var posts []model.Post
 	if partition == "主页" || len(partition) == 0 {
 		db.Find(&posts)
 	} else {
-		db.Find(&posts,"`partition` = ?",partition)
+		db.Find(&posts, "`partition` = ?", partition)
 	}
 	var postResponses []PostResponse
 	for _, post := range posts {
 		isLiked := false
-		var like model.Like
-    	db.Where("user_id = ? AND post_id = ?", temUser.ID, post.ID).First(&like)
-    	if like.ID != 0 {
-        	isLiked = true
-    	}
+		var like model.Plike
+		db.Where("userID = ? AND ptargetID = ?", temUser.Userid, post.Postid).First(&like)
+		if like.Plikeid != 0 {
+			isLiked = true
+		}
 		var user model.User
-        db.Where("id = ?", post.UserID).First(&user)
+		db.Where("userID = ?", post.Userid).First(&user)
 		postResponse := PostResponse{
-			PostID: post.ID,
-            UserName: user.Name,
-			UserTelephone: user.Telephone,
-            Title: post.Title,
-            Content: post.Content,
-            Like: post.Like,
-            Comment: post.Comment,
-            PostTime: post.PostTime,
-			IsLiked: isLiked,
-        }
+			PostID:        uint(post.Postid),
+			UserName:      user.Name,
+			UserTelephone: user.Phone,
+			Title:         post.Title,
+			Content:       post.Ptext,
+			Like:          post.LikeNum,
+			Comment:       post.CommentNum,
+			PostTime:      post.PostTime,
+			IsLiked:       isLiked,
+		}
 		postResponses = append(postResponses, postResponse)
 	}
 	c.JSON(http.StatusOK, postResponses)
@@ -139,8 +137,8 @@ func Browse(c *gin.Context) {
 
 type LikeMsg struct {
 	UserTelephone string
-	PostID uint
-	IsLiked bool
+	PostID        uint
+	IsLiked       bool
 }
 
 func UpdateLike(c *gin.Context) {
@@ -152,44 +150,44 @@ func UpdateLike(c *gin.Context) {
 	isLiked := requestLikeMsg.IsLiked
 	// Find the user by telephone
 	var user model.User
-	db.Where("telephone = ?", userTelephone).First(&user)
+	db.Where("phone = ?", userTelephone).First(&user)
 	var post model.Post
-	db.Where("id = ?", postID).First(&post)
+	db.Where("postID = ?", postID).First(&post)
 	if isLiked {
-		db.Model(&post).Update("like", post.Like - 1)
-		var like model.Like
-    	db.Where("user_id = ? AND post_id = ?", user.ID, post.ID).First(&like)
-    	if like.ID != 0 {
-        	db.Delete(&like)
-    	}
-	}else {
-		newLike := model.Like {
-			UserID: uint(user.ID),
-			PostID: uint(post.ID),
+		db.Model(&post).Update("like_num", post.LikeNum-1)
+		var like model.Plike
+		db.Where("userID = ? AND postID = ?", user.Userid, post.Postid).First(&like)
+		if like.Plikeid != 0 {
+			db.Delete(&like)
 		}
-		if newLike.UserID != 0 && newLike.PostID != 0 {
-			db.Model(&post).Update("like", post.Like + 1)
+	} else {
+		newLike := model.Plike{
+			Userid:    user.Userid,
+			Ptargetid: post.Postid,
+		}
+		if newLike.Userid != 0 && newLike.Ptargetid != 0 {
+			db.Model(&post).Update("like_num", post.LikeNum+1)
 			db.Create(&newLike)
 		}
 	}
 }
 
 type PostDetailsResponse struct {
-	PostID uint
-    UserName string
+	PostID        uint
+	UserName      string
 	UserTelephone string
-    Title string
-    Content string
-    Like int
-    Comment int
-    PostTime time.Time
-	IsLiked bool
+	Title         string
+	Content       string
+	Like          int
+	Comment       int
+	PostTime      time.Time
+	IsLiked       bool
 }
 
 type PostDetailsMsg struct {
 	UserTelephone string
-	PostID uint
-} 
+	PostID        uint
+}
 
 func ShowDetails(c *gin.Context) {
 	db := common.GetDB()
@@ -198,27 +196,27 @@ func ShowDetails(c *gin.Context) {
 	userTelephone := requestPostDetailsMsg.UserTelephone
 	postID := requestPostDetailsMsg.PostID
 	var temUser model.User
-    db.Where("telephone = ?", userTelephone).First(&temUser)
+	db.Where("phone = ?", userTelephone).First(&temUser)
 	isLiked := false
-	var like model.Like
-    db.Where("user_id = ? AND post_id = ?", temUser.ID, postID).First(&like)
-    if like.ID != 0 {
-        isLiked = true
-    }
+	var like model.Plike
+	db.Where("userID = ? AND postID = ?", temUser.Userid, postID).First(&like)
+	if like.Plikeid != 0 {
+		isLiked = true
+	}
 	var post model.Post
-	db.Where("id = ?", postID).First(&post)
+	db.Where("postID = ?", postID).First(&post)
 	var user model.User
-    db.Where("id = ?", post.UserID).First(&user)
+	db.Where("userID = ?", post.Userid).First(&user)
 	postDetailsResponse := PostDetailsResponse{
-		PostID: post.ID,
-        UserName: user.Name,
-		UserTelephone: user.Telephone,
-        Title: post.Title,
-        Content: post.Content,
-        Like: post.Like,
-        Comment: post.Comment,
-        PostTime: post.PostTime,
-		IsLiked: isLiked,
-    }
+		PostID:        uint(post.Postid),
+		UserName:      user.Name,
+		UserTelephone: user.Phone,
+		Title:         post.Title,
+		Content:       post.Ptext,
+		Like:          post.LikeNum,
+		Comment:       post.CommentNum,
+		PostTime:      post.PostTime,
+		IsLiked:       isLiked,
+	}
 	c.JSON(http.StatusOK, postDetailsResponse)
 }

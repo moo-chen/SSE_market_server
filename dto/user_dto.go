@@ -3,14 +3,14 @@ package dto
 
 import "loginTest/model"
 
-type UserDto struct{
-	Name string `json:"name"`
+type UserDto struct {
+	Name      string `json:"name"`
 	Telephone string `json:"telephone"`
 }
 
-func ToUserDto(user model.User) UserDto{
+func ToUserDto(user model.User) UserDto {
 	return UserDto{
-		Name: user.Name,
-		Telephone: user.Telephone,
+		Name:      user.Name,
+		Telephone: user.Phone,
 	}
 }
