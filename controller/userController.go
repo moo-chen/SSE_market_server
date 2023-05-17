@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"loginTest/common"
 	"loginTest/dto"
@@ -8,15 +11,12 @@ import (
 	"loginTest/response"
 	"loginTest/util"
 	"net/http"
-	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func isTelephoneExist(db *gorm.DB, telephone string) bool {
 	var user model.User
-	db.Where("telephone = ?",telephone).First(&user)
-	if user.ID != 0 {
+	db.Where("phone = ?", telephone).First(&user)
+	if user.Userid != 0 {
 		return true
 	}
 	return false
@@ -29,10 +29,10 @@ func Register(c *gin.Context) {
 	c.Bind(&requestUser)
 	//获取参数
 	name := requestUser.Name
-	telephone := requestUser.Telephone
+	telephone := requestUser.Phone
 	password := requestUser.Password
 
-    //若使用postman等工具，写法如下：
+	//若使用postman等工具，写法如下：
 	// name := c.PostForm("name")
 	// telephone := c.PostForm("telephone")
 	// password := c.PostForm("password")
@@ -40,7 +40,8 @@ func Register(c *gin.Context) {
 
 	//验证数据
 	if len(telephone) != 11 {
-		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "手机号必须为11位")
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "手机号必须为11位!!!")
+		println(telephone)
 		return
 	}
 	if len(password) < 6 {
@@ -64,9 +65,9 @@ func Register(c *gin.Context) {
 	}
 	// 创建新用户结构体
 	newUser := model.User{
-		Name:      name,
-		Telephone: telephone,
-		Password:  string(hasedPassword),
+		Name:     name,
+		Phone:    telephone,
+		Password: string(hasedPassword),
 	}
 	// 将结构体传进Create函数即可在数据库中添加一条记录
 	// 其他的增删查改功能参见postController里的updateLike函数
@@ -82,16 +83,30 @@ func Register(c *gin.Context) {
 	//返回结果
 	response.Success(c, gin.H{"token": token}, "注册成功")
 }
+
+type loginuser struct {
+	gorm.Model
+	Name     string `gorm:"type:varchar(20);not null"`
+	Phone    string `gorm:"type:varchar(11);not null"`
+	Password string `gorm:"size:255;not null"`
+}
+
 func Login(c *gin.Context) {
 	db := common.GetDB()
-	var requestUser = model.User{}
+	var requestUser = loginuser{}
 	c.Bind(&requestUser)
 	//获取参数
-	telephone := requestUser.Telephone
+	telephone := requestUser.Phone
 	password := requestUser.Password
 	//数据验证
+	if len(telephone) == 0 {
+		msg := "手机号为空！" + telephone
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, msg)
+		return
+	}
 	if len(telephone) != 11 {
-		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "手机号必须为11位")
+		msg := "手机号必须为11位" + telephone
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, msg)
 		return
 	}
 	if len(password) < 6 {
@@ -100,8 +115,8 @@ func Login(c *gin.Context) {
 	}
 	//判断手机号是否存在
 	var user model.User
-	db.Where("telephone = ?",telephone).First(&user)
-	if user.ID == 0{
+	db.Where("phone = ?", telephone).First(&user)
+	if user.Userid == 0 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "用户不存在")
 		return
 	}
