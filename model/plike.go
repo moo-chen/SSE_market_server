@@ -2,9 +2,9 @@ package model
 
 // Plike [...]
 type Plike struct {
-	Plikeid   int  `gorm:"primaryKey;column:plikeID;type:int;not null" json:"-"`
-	Ptargetid int  `gorm:"index:pliketarget;column:ptargetID;type:int;not null" json:"ptargetId"`
-	Post      Post `gorm:"joinForeignKey:ptargetID;foreignKey:postID;references:Ptargetid" json:"postList"`
-	Userid    int  `gorm:"index:plikeuser;column:userID;type:int;not null" json:"userId"`
-	User      User `gorm:"joinForeignKey:userID;foreignKey:userID;references:Userid" json:"userList"`
+	PlikeID   int  `gorm:"primary_key;column:plikeID"`
+	PtargetID int  `gorm:"index:pliketarget;column:ptargetID;type:int;not null"`
+	Post      Post `gorm:"association_foreignkey:ptargetID;foreignkey:postID"`
+	UserID    int  `gorm:"index:plikeuser;column:userID;type:int;not null"`
+	User      User `gorm:"association_foreignkey:userID;foreignkey:userID"`
 }

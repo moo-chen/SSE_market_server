@@ -16,7 +16,7 @@ import (
 func isTelephoneExist(db *gorm.DB, telephone string) bool {
 	var user model.User
 	db.Where("phone = ?", telephone).First(&user)
-	if user.Userid != 0 {
+	if user.UserID != 0 {
 		return true
 	}
 	return false
@@ -72,6 +72,10 @@ func Register(c *gin.Context) {
 	// 将结构体传进Create函数即可在数据库中添加一条记录
 	// 其他的增删查改功能参见postController里的updateLike函数
 	db.Create(&newUser)
+	if newUser.UserID == 0 {
+		response.Response(c, http.StatusInternalServerError, 400, nil, "userID为0")
+		return
+	}
 	//发放token
 	token, err := common.ReleaseToken(newUser)
 	if err != nil {
@@ -116,7 +120,7 @@ func Login(c *gin.Context) {
 	//判断手机号是否存在
 	var user model.User
 	db.Where("phone = ?", telephone).First(&user)
-	if user.Userid == 0 {
+	if user.UserID == 0 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "用户不存在")
 		return
 	}
