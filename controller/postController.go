@@ -66,7 +66,7 @@ func Post(c *gin.Context) {
 	db.Where("phone = ?", userTelephone).First(&user)
 
 	newPost := model.Post{
-		Userid:    int(user.Userid),
+		UserID:    int(user.UserID),
 		Partition: partition,
 		Title:     title,
 		Ptext:     content,
@@ -113,14 +113,14 @@ func Browse(c *gin.Context) {
 	for _, post := range posts {
 		isLiked := false
 		var like model.Plike
-		db.Where("userID = ? AND ptargetID = ?", temUser.Userid, post.Postid).First(&like)
-		if like.Plikeid != 0 {
+		db.Where("userID = ? AND ptargetID = ?", temUser.UserID, post.PostID).First(&like)
+		if like.PlikeID != 0 {
 			isLiked = true
 		}
 		var user model.User
-		db.Where("userID = ?", post.Userid).First(&user)
+		db.Where("userID = ?", post.UserID).First(&user)
 		postResponse := PostResponse{
-			PostID:        uint(post.Postid),
+			PostID:        uint(post.PostID),
 			UserName:      user.Name,
 			UserTelephone: user.Phone,
 			Title:         post.Title,
@@ -156,16 +156,16 @@ func UpdateLike(c *gin.Context) {
 	if isLiked {
 		db.Model(&post).Update("like_num", post.LikeNum-1)
 		var like model.Plike
-		db.Where("userID = ? AND postID = ?", user.Userid, post.Postid).First(&like)
-		if like.Plikeid != 0 {
+		db.Where("userID = ? AND postID = ?", user.UserID, post.PostID).First(&like)
+		if like.PlikeID != 0 {
 			db.Delete(&like)
 		}
 	} else {
 		newLike := model.Plike{
-			Userid:    user.Userid,
-			Ptargetid: post.Postid,
+			UserID:    user.UserID,
+			PtargetID: post.PostID,
 		}
-		if newLike.Userid != 0 && newLike.Ptargetid != 0 {
+		if newLike.UserID != 0 && newLike.PtargetID != 0 {
 			db.Model(&post).Update("like_num", post.LikeNum+1)
 			db.Create(&newLike)
 		}
@@ -199,16 +199,16 @@ func ShowDetails(c *gin.Context) {
 	db.Where("phone = ?", userTelephone).First(&temUser)
 	isLiked := false
 	var like model.Plike
-	db.Where("userID = ? AND postID = ?", temUser.Userid, postID).First(&like)
-	if like.Plikeid != 0 {
+	db.Where("userID = ? AND postID = ?", temUser.UserID, postID).First(&like)
+	if like.PlikeID != 0 {
 		isLiked = true
 	}
 	var post model.Post
 	db.Where("postID = ?", postID).First(&post)
 	var user model.User
-	db.Where("userID = ?", post.Userid).First(&user)
+	db.Where("userID = ?", post.UserID).First(&user)
 	postDetailsResponse := PostDetailsResponse{
-		PostID:        uint(post.Postid),
+		PostID:        uint(post.PostID),
 		UserName:      user.Name,
 		UserTelephone: user.Phone,
 		Title:         post.Title,

@@ -15,25 +15,30 @@ func AuthMiddleware() gin.HandlerFunc {
 		tokenString := ctx.GetHeader("Authorization")
 		//若token为空或token格式不正确
 		if tokenString == "" || !strings.HasPrefix(tokenString, "Bearer") {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足"})
+			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足: 100}"})
 			ctx.Abort()
 			return
 		}
 		tokenString = tokenString[7:]
 		token, claims, err := common.ParseToken(tokenString)
 		if err != nil || !token.Valid {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足"})
+			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足: 200}}"})
 			ctx.Abort()
 			return
 		}
 		//验证通过后获取claims中的userId
-		userId := claims.UserId
+		userId := claims.UserID
+		if userId == 0 {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足:301"})
+			ctx.Abort()
+			return
+		}
 		db := common.GetDB()
 		user := model.User{}
-		db.Where("userID =?", userId).First(&user)
+		db.Where("userID = ?", userId).First(&user)
 		//用户不存在
-		if user.Userid == 0 {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足"})
+		if user.UserID == 0 {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足:302"})
 			ctx.Abort()
 			return
 		}

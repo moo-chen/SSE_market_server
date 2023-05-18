@@ -6,12 +6,12 @@ import (
 
 // Ccomment [...]
 type Ccomment struct {
-	Ccommentid int       `gorm:"primaryKey;column:ccommentID;type:int;not null" json:"-"`
-	Userid     int       `gorm:"index:ccommentuser;column:userID;type:int;not null" json:"userId"`
-	User       User      `gorm:"joinForeignKey:userID;foreignKey:userID;references:Userid" json:"userList"`
-	Ctargetid  int       `gorm:"index:ccommenttarget;column:ctargetID;type:int;not null" json:"ctargetId"`
-	Pcomment   Pcomment  `gorm:"joinForeignKey:ctargetID;foreignKey:pcommentID;references:Ctargetid" json:"pcommentList"`
-	LikeNum    int       `gorm:"column:like_num;type:int;default:null" json:"likeNum"`
-	Cctext     string    `gorm:"column:cctext;type:varchar(100);default:null" json:"cctext"`
-	Time       time.Time `gorm:"column:time;type:datetime;default:null" json:"time"`
+	CcommentID int       `gorm:"primary_key;column:ccommentID"`
+	UserID     int       `gorm:"index:ccommentuser;column:userID;type:int;not null"`
+	User       User      `gorm:"association_foreignkey:userID;foreignkey:userID"`
+	CtargetID  int       `gorm:"index:ccommenttarget;column:ctargetID;type:int;not null"`
+	Pcomment   Pcomment  `gorm:"association_foreignkey:ctargetID;foreignkey:pcommentID"`
+	LikeNum    int       `gorm:"column:like_num;type:int"`
+	Cctext     string    `gorm:"column:cctext;type:varchar(100)"`
+	Time       time.Time `gorm:"column:time;type:datetime"`
 }

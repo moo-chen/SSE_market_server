@@ -10,14 +10,14 @@ import (
 var jwtKey = []byte("a_secret_crect")
 
 type Claims struct {
-	UserId int
+	UserID int
 	jwt.StandardClaims
 }
 
 func ReleaseToken(user model.User) (string, error) {
 	expirationTime := time.Now().Add(7 * 24 * time.Hour)
 	claims := &Claims{
-		UserId: user.Userid,
+		UserID: user.UserID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 			IssuedAt:  time.Now().Unix(),
