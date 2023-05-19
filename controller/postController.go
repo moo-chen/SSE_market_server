@@ -28,6 +28,10 @@ func Post(c *gin.Context) {
 	content := requestPostMsg.Content
 	partition := requestPostMsg.Partition
 	// 验证数据
+	if len(userTelephone) == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "返回的手机号为空")
+		return
+	}
 	if !isTelephoneExist(db, userTelephone) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "用户不存在")
 		return
@@ -156,7 +160,7 @@ func UpdateLike(c *gin.Context) {
 	if isLiked {
 		db.Model(&post).Update("like_num", post.LikeNum-1)
 		var like model.Plike
-		db.Where("userID = ? AND postID = ?", user.UserID, post.PostID).First(&like)
+		db.Where("userID = ? AND ptargetID = ?", user.UserID, post.PostID).First(&like)
 		if like.PlikeID != 0 {
 			db.Delete(&like)
 		}
@@ -199,7 +203,7 @@ func ShowDetails(c *gin.Context) {
 	db.Where("phone = ?", userTelephone).First(&temUser)
 	isLiked := false
 	var like model.Plike
-	db.Where("userID = ? AND postID = ?", temUser.UserID, postID).First(&like)
+	db.Where("userID = ? AND ptargetID = ?", temUser.UserID, postID).First(&like)
 	if like.PlikeID != 0 {
 		isLiked = true
 	}
