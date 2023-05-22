@@ -5,7 +5,7 @@ var (
 	ValidateText   = "验证码为vcode, 请在5分钟内输入"
 	ValidateSender = "Email Assistant <emailUsername>"
 	EmailUsername  = "3416825450@qq.com"
-	Password       = "zxpqnwqcycvkdaab"
+	Password       = "ibpxicpineapcigf"
 	Addr           = "smtp.qq.com:25"
 	Host           = "smtp.qq.com"
 )

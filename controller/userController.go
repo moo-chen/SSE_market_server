@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -32,23 +33,27 @@ func isEmailExist(db *gorm.DB, email string) bool {
 	return false
 }
 
+type registerUser struct {
+	gorm.Model
+	Name     string `gorm:"type:varchar(20);not null"`
+	Phone    string `gorm:"type:varchar(11);not null"`
+	Password string `gorm:"size:255;not null"`
+	Email    string `gorm:"type:varchar(11);not null"`
+	ValiCode string `gorm:"type:varchar(10);not null"`
+}
+
 func Register(c *gin.Context) {
 	// 连接数据库
 	db := common.GetDB()
 	// 从前端获取信息
-	var requestUser = model.User{}
+	var requestUser = registerUser{}
 	c.Bind(&requestUser)
 	//获取参数
 	name := requestUser.Name
 	telephone := requestUser.Phone
 	password := requestUser.Password
 	email := requestUser.Email
-
-	//若使用postman等工具，写法如下：
-	// name := c.PostForm("name")
-	// telephone := c.PostForm("telephone")
-	// password := c.PostForm("password")
-	// PostForm中的参数与在postman中发送信息的名字要一致
+	valiCode := requestUser.ValiCode
 
 	//验证数据
 	if len(telephone) != 11 {
@@ -83,6 +88,19 @@ func Register(c *gin.Context) {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "该邮箱已存在")
 		return
 	}
+	rds := common.MyRedis
+	ctx := context.Background()
+	correctValiCode, err := rds.Get(ctx, email).Result()
+	if err != nil {
+		response.Response(c, http.StatusBadRequest, 400, nil, "验证码错误")
+		return
+	}
+	fmt.Println(correctValiCode)
+	fmt.Println(valiCode)
+	if correctValiCode != valiCode {
+		response.Response(c, http.StatusBadRequest, 400, nil, "验证码错误")
+		return
+	}
 	// 创建用户
 	hasedPassword := password
 	//hasedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -114,6 +132,64 @@ func Register(c *gin.Context) {
 	}
 	//返回结果
 	response.Success(c, gin.H{"token": token}, "注册成功")
+	rds.Del(ctx, email)
+}
+
+type identity struct {
+	Email    string `gorm:"type:varchar(11);not null"`
+	ValiCode string `gorm:"type:varchar(10);not null"`
+}
+
+func IdentityValidate(c *gin.Context) {
+	db := common.GetDB()
+	// 从前端获取信息
+	var requestUser = identity{}
+	c.Bind(&requestUser)
+	//获取参数
+	email := requestUser.Email
+	valiCode := requestUser.ValiCode
+
+	check := false
+	for i := 0; i < len(email); i++ {
+		if email[i] == '@' {
+			check = true
+		}
+	}
+	if !check {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "邮箱不符合要求")
+		return
+	}
+	if !isEmailExist(db, email) {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "该邮箱不存在")
+		return
+	}
+	rds := common.MyRedis
+	ctx := context.Background()
+	correctValiCode, err := rds.Get(ctx, email).Result()
+	if err != nil {
+		response.Response(c, http.StatusBadRequest, 400, nil, "验证码错误")
+		return
+	}
+	fmt.Println(correctValiCode)
+	fmt.Println(valiCode)
+	if correctValiCode != valiCode {
+		response.Response(c, http.StatusBadRequest, 400, nil, "验证码错误")
+		return
+	}
+
+	var newUser model.User
+	db.Where("email = ?", email).First(&newUser)
+	//发放token
+	token, err := common.ReleaseToken(newUser)
+	if err != nil {
+		response.Response(c, http.StatusInternalServerError, 400, nil, "系统异常")
+
+		log.Printf("token generate error: %v", err)
+		return
+	}
+	//返回结果
+	response.Success(c, gin.H{"token": token}, "身份验证成功")
+	rds.Del(ctx, email)
 }
 
 type loginuser struct {
@@ -171,8 +247,9 @@ func Login(c *gin.Context) {
 }
 
 type modifyUser struct {
-	Phone    string `gorm:"type:varchar(11);not null"`
-	Password string `gorm:"size:255;not null"`
+	Phone     string `gorm:"type:varchar(11);not null"`
+	Password  string `gorm:"size:255;not null"`
+	Password2 string `gorm:"size:255;not null"`
 }
 
 func ModifyPassword(c *gin.Context) {
@@ -183,6 +260,18 @@ func ModifyPassword(c *gin.Context) {
 	c.Bind(&inputUser)
 	phone := inputUser.Phone
 	password := inputUser.Password
+	password2 := inputUser.Password2
+	fmt.Println(phone)
+	fmt.Println(password)
+	fmt.Println(password2)
+	if password != password2 {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "密码输入不一致")
+		return
+	}
+	if !isTelephoneExist(db, phone) {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "未找到电话")
+		return
+	}
 	db.Where("phone = ?", phone).First(&user)
 	fmt.Println(phone)
 	fmt.Println(password)
@@ -197,12 +286,19 @@ func ModifyPassword(c *gin.Context) {
 
 type requestEmail struct {
 	Email string `gorm:"type:varchar(11);not null"`
+	Mode  int
 }
 
 func ValidateEmail(c *gin.Context) {
 	var request requestEmail
 	c.Bind(&request)
 	email := request.Email
+	mode := request.Mode
+	db := common.DB
+	if mode == 0 && isEmailExist(db, email) {
+		response.Response(c, http.StatusBadRequest, 400, gin.H{"data": email, "mode": mode}, "邮箱已注册")
+		return
+	}
 	fmt.Println("email is ", email)
 	if email == "" {
 		response.Response(c, http.StatusBadRequest, 400, gin.H{"data": email}, "邮箱获取错误")
