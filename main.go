@@ -11,6 +11,8 @@ import (
 func main() {
 	InitConfig()
 	db := common.InitDB()
+	rds := common.RedisInit()
+	defer rds.Close()
 	defer db.Close()
 	r := gin.Default()
 	CollectRoute(r)

@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"log"
+	"loginTest/api"
 	"loginTest/common"
 	"loginTest/dto"
 	"loginTest/model"
@@ -192,6 +193,27 @@ func ModifyPassword(c *gin.Context) {
 	user.Password = password
 	db.Save(&user)
 	response.Success(c, gin.H{"data": user}, "修改密码成功")
+}
+
+type requestEmail struct {
+	Email string `gorm:"type:varchar(11);not null"`
+}
+
+func ValidateEmail(c *gin.Context) {
+	var request requestEmail
+	c.Bind(&request)
+	email := request.Email
+	fmt.Println("email is ", email)
+	if email == "" {
+		response.Response(c, http.StatusBadRequest, 400, gin.H{"data": email}, "邮箱获取错误")
+		return
+	}
+	err := api.SendEmail(email)
+	if err != nil {
+		response.Response(c, http.StatusBadRequest, 400, gin.H{"data": email}, "发送邮箱错误")
+		return
+	}
+	response.Success(c, gin.H{"data": email}, "邮箱发送成功")
 }
 
 func Info(c *gin.Context) {
