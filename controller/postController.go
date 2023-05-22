@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
@@ -9,6 +8,8 @@ import (
 	"net/http"
 	"time"
 	"unicode/utf8"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PostMsg struct {
@@ -90,6 +91,7 @@ type PostResponse struct {
 	Like          int
 	Comment       int
 	PostTime      time.Time
+	IsSaved       bool
 	IsLiked       bool
 }
 
@@ -115,6 +117,12 @@ func Browse(c *gin.Context) {
 	}
 	var postResponses []PostResponse
 	for _, post := range posts {
+		isSaved := false
+		var save model.Psave
+		db.Where("userID = ? AND ptargetID = ?", temUser.UserID, post.PostID).First(&save)
+		if save.PsaveID != 0 {
+			isSaved = true
+		}
 		isLiked := false
 		var like model.Plike
 		db.Where("userID = ? AND ptargetID = ?", temUser.UserID, post.PostID).First(&like)
@@ -132,11 +140,47 @@ func Browse(c *gin.Context) {
 			Like:          post.LikeNum,
 			Comment:       post.CommentNum,
 			PostTime:      post.PostTime,
+			IsSaved:       isSaved,
 			IsLiked:       isLiked,
 		}
 		postResponses = append(postResponses, postResponse)
 	}
 	c.JSON(http.StatusOK, postResponses)
+}
+
+type SaveMsg struct {
+	UserTelephone string
+	PostID        uint
+	IsSaved       bool
+}
+
+func UpdateSave(c *gin.Context) {
+	db := common.GetDB()
+	var requestSaveMsg SaveMsg
+	c.Bind(&requestSaveMsg)
+	userTelephone := requestSaveMsg.UserTelephone
+	postID := requestSaveMsg.PostID
+	isSaved := requestSaveMsg.IsSaved
+	// Find the user by telephone
+	var user model.User
+	db.Where("phone = ?", userTelephone).First(&user)
+	var post model.Post
+	db.Where("postID = ?", postID).First(&post)
+	if isSaved {
+		var save model.Psave
+		db.Where("userID = ? AND ptargetID = ?", user.UserID, post.PostID).First(&save)
+		if save.PsaveID != 0 {
+			db.Delete(&save)
+		}
+	} else {
+		newSave := model.Psave{
+			UserID:    user.UserID,
+			PtargetID: post.PostID,
+		}
+		if newSave.UserID != 0 && newSave.PtargetID != 0 {
+			db.Create(&newSave)
+		}
+	}
 }
 
 type LikeMsg struct {
@@ -185,6 +229,7 @@ type PostDetailsResponse struct {
 	Like          int
 	Comment       int
 	PostTime      time.Time
+	IsSaved       bool
 	IsLiked       bool
 }
 
@@ -207,6 +252,12 @@ func ShowDetails(c *gin.Context) {
 	if like.PlikeID != 0 {
 		isLiked = true
 	}
+	isSaved := false
+	var save model.Psave
+	db.Where("userID = ? AND ptargetID = ?", temUser.UserID, postID).First(&save)
+	if save.PsaveID != 0 {
+		isSaved = true
+	}
 	var post model.Post
 	db.Where("postID = ?", postID).First(&post)
 	var user model.User
@@ -220,6 +271,7 @@ func ShowDetails(c *gin.Context) {
 		Like:          post.LikeNum,
 		Comment:       post.CommentNum,
 		PostTime:      post.PostTime,
+		IsSaved:       isSaved,
 		IsLiked:       isLiked,
 	}
 	c.JSON(http.StatusOK, postDetailsResponse)
