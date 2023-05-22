@@ -1,9 +1,9 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"loginTest/common"
 	"loginTest/dto"
@@ -21,6 +21,16 @@ func isTelephoneExist(db *gorm.DB, telephone string) bool {
 	}
 	return false
 }
+
+func isEmailExist(db *gorm.DB, email string) bool {
+	var user model.User
+	db.Where("email = ?", email).First(&user)
+	if user.UserID != 0 {
+		return true
+	}
+	return false
+}
+
 func Register(c *gin.Context) {
 	// 连接数据库
 	db := common.GetDB()
@@ -31,6 +41,7 @@ func Register(c *gin.Context) {
 	name := requestUser.Name
 	telephone := requestUser.Phone
 	password := requestUser.Password
+	email := requestUser.Email
 
 	//若使用postman等工具，写法如下：
 	// name := c.PostForm("name")
@@ -52,22 +63,38 @@ func Register(c *gin.Context) {
 	if len(name) == 0 {
 		name = util.RandomString(10)
 	}
+	check := false
+	for i := 0; i < len(email); i++ {
+		if email[i] == '@' {
+			check = true
+		}
+	}
+	if !check {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "邮箱不符合要求")
+		return
+	}
 	// 判断手机号是否存在
 	if isTelephoneExist(db, telephone) {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "该手机号已存在")
 		return
 	}
-	// 创建用户
-	hasedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		response.Response(c, http.StatusInternalServerError, 500, nil, "密码加密错误")
+	if isEmailExist(db, email) {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "该邮箱已存在")
 		return
 	}
+	// 创建用户
+	hasedPassword := password
+	//hasedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	//if err != nil {
+	//	response.Response(c, http.StatusInternalServerError, 500, nil, "密码加密错误")
+	//	return
+	//}
 	// 创建新用户结构体
 	newUser := model.User{
 		Name:     name,
 		Phone:    telephone,
 		Password: string(hasedPassword),
+		Email:    email,
 	}
 	// 将结构体传进Create函数即可在数据库中添加一条记录
 	// 其他的增删查改功能参见postController里的updateLike函数
@@ -125,7 +152,8 @@ func Login(c *gin.Context) {
 		return
 	}
 	//判断密码是否正确
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	//if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	if user.Password != password {
 		response.Response(c, http.StatusBadRequest, 400, nil, "密码错误")
 		return
 	}
@@ -139,6 +167,31 @@ func Login(c *gin.Context) {
 	}
 	//返回结果
 	response.Success(c, gin.H{"token": token}, "登录成功")
+}
+
+type modifyUser struct {
+	Phone    string `gorm:"type:varchar(11);not null"`
+	Password string `gorm:"size:255;not null"`
+}
+
+func ModifyPassword(c *gin.Context) {
+	fmt.Println("Successfully deliver!")
+	db := common.GetDB()
+	var user model.User
+	var inputUser modifyUser
+	c.Bind(&inputUser)
+	phone := inputUser.Phone
+	password := inputUser.Password
+	db.Where("phone = ?", phone).First(&user)
+	fmt.Println(phone)
+	fmt.Println(password)
+	if user.UserID == 0 {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "用户不存在")
+		return
+	}
+	user.Password = password
+	db.Save(&user)
+	response.Success(c, gin.H{"data": user}, "修改密码成功")
 }
 
 func Info(c *gin.Context) {
