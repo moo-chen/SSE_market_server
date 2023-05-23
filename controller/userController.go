@@ -102,12 +102,12 @@ func Register(c *gin.Context) {
 		return
 	}
 	// 创建用户
-	hasedPassword := password
-	//hasedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	//if err != nil {
-	//	response.Response(c, http.StatusInternalServerError, 500, nil, "密码加密错误")
-	//	return
-	//}
+	// hasedPassword := password
+	hasedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		response.Response(c, http.StatusInternalServerError, 500, nil, "密码加密错误")
+		return
+	}
 	// 创建新用户结构体
 	newUser := model.User{
 		Name:     name,
