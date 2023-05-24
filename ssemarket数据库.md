@@ -32,6 +32,7 @@
 - 点赞数量 like_num bigint
 - 评论内容 cctext varchar(100)
 - 评论时间 time datetime
+- 回复用户ID usertargetID int
 
 ## 帖子点赞 plike
 

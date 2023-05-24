@@ -2,7 +2,6 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
-	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
 	"loginTest/response"
@@ -25,13 +24,14 @@ type Commentsmsg struct {
 	PostID        int    `json:"postID"`
 }
 type Subcomment struct {
-	CcommentID   int       `json:"ccommentID"`
-	Author       string    `json:"author"`
-	AuthorAvatar string    `json:"authorAvatar"`
-	CommentTime  time.Time `json:"commentTime"`
-	Content      string    `json:"content"`
-	LikeNum      int       `json:"likeNum"`
-	IsLiked      bool      `json:"isLiked"`
+	CcommentID     int       `json:"ccommentID"`
+	Author         string    `json:"author"`
+	AuthorAvatar   string    `json:"authorAvatar"`
+	CommentTime    time.Time `json:"commentTime"`
+	Content        string    `json:"content"`
+	LikeNum        int       `json:"likeNum"`
+	IsLiked        bool      `json:"isLiked"`
+	UserTargetName string    `json:"userTargetName"`
 }
 
 // GetComments 给前端返回对应帖子的评论以及每条帖子评论的评论
@@ -91,13 +91,14 @@ func GetSubComments(pcomment model.Pcomment) []Subcomment {
 		var commentuser model.User
 		db.Where("userID =?", ccomment.UserID).First(&commentuser)
 		comment := Subcomment{
-			CcommentID:   ccomment.CcommentID,
-			Author:       commentuser.Name,
-			AuthorAvatar: commentuser.Profile,
-			CommentTime:  ccomment.Time,
-			Content:      ccomment.Cctext,
-			LikeNum:      ccomment.LikeNum,
-			IsLiked:      isLike,
+			CcommentID:     ccomment.CcommentID,
+			Author:         commentuser.Name,
+			AuthorAvatar:   commentuser.Profile,
+			CommentTime:    ccomment.Time,
+			Content:        ccomment.Cctext,
+			LikeNum:        ccomment.LikeNum,
+			IsLiked:        isLike,
+			UserTargetName: ccomment.UserTargetName,
 		}
 		subcomments = append(subcomments, comment)
 	}
@@ -119,28 +120,39 @@ func PostPcomment(c *gin.Context) {
 	db := common.GetDB()
 	var msg PcommentMsg
 	c.Bind(&msg)
-	if api.GetSuggestion(msg.Content) == "Block" {
-		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容含有不良信息,请重新编辑")
-		return
-	}
+	//if api.GetSuggestion(msg.Content) == "Block" {
+	//	response.Response(c, http.StatusBadRequest, 400, nil, "评论内容含有不良信息,请重新编辑")
+	//	return
+	//}
 	var user model.User
 	db.Where("phone =?", msg.UserTelephone).First(&user)
-	newPcomment := model.Pcomment{
+	pcomment := model.Pcomment{
 		UserID:    user.UserID,
 		PtargetID: msg.PostID,
 		Pctext:    msg.Content,
 		Time:      time.Now(),
 		LikeNum:   0,
 	}
-	db.Create(&newPcomment)
-	response.Response(c, http.StatusOK, 200, nil, "评论成功！")
+	db.Create(&pcomment)
+	comment := CommentResponse{
+		PcommentID:   pcomment.PcommentID,
+		Author:       user.Name,
+		AuthorAvatar: user.Profile,
+		CommentTime:  pcomment.Time,
+		Content:      pcomment.Pctext,
+		LikeNum:      pcomment.LikeNum,
+		SubComments:  GetSubComments(pcomment),
+		IsLiked:      false,
+	}
+	c.JSON(http.StatusOK, comment)
 }
 
 // CcommentMsg 用于接收来自前端发表评论的评论的结构体
 type CcommentMsg struct {
-	UserTelephone string `json:"userTelephone"`
-	PcommentID    int    `json:"pcommentID"`
-	Content       string `json:"content"`
+	UserTelephone  string `json:"userTelephone"`
+	PcommentID     int    `json:"pcommentID"`
+	Content        string `json:"content"`
+	UserTargetName string `json:"userTargetName"`
 }
 
 // PostCcomment 发表评论的评论
@@ -160,18 +172,19 @@ func PostCcomment(c *gin.Context) {
 	if len(msg.UserTelephone) == 0 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "评论人不能为空")
 	}
-	if api.GetSuggestion(content) == "Block" {
-		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容含有不良信息,请重新编辑")
-		return
-	}
+	//if api.GetSuggestion(content) == "Block" {
+	//	response.Response(c, http.StatusBadRequest, 400, nil, "评论内容含有不良信息,请重新编辑")
+	//	return
+	//}
 	var user model.User
 	db.Where("phone =?", msg.UserTelephone).First(&user)
 	newCcomment := model.Ccomment{
-		UserID:    user.UserID,
-		CtargetID: msg.PcommentID,
-		Cctext:    msg.Content,
-		Time:      time.Now(),
-		LikeNum:   0,
+		UserID:         user.UserID,
+		CtargetID:      msg.PcommentID,
+		Cctext:         msg.Content,
+		Time:           time.Now(),
+		LikeNum:        0,
+		UserTargetName: msg.UserTargetName,
 	}
 	db.Create(&newCcomment)
 	response.Response(c, http.StatusOK, 200, nil, "评论成功！")
