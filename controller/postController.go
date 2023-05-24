@@ -98,6 +98,7 @@ type PostResponse struct {
 type BrowseMeg struct {
 	UserTelephone string
 	Partition     string
+	Searchinfo    string
 }
 
 func Browse(c *gin.Context) {
@@ -107,11 +108,16 @@ func Browse(c *gin.Context) {
 	c.Bind(&requestBrowseMeg)
 	userTelephone := requestBrowseMeg.UserTelephone
 	partition := requestBrowseMeg.Partition
+	searchinfo := requestBrowseMeg.Searchinfo
 	var temUser model.User
 	db.Where("phone = ?", userTelephone).First(&temUser)
 	var posts []model.Post
 	if partition == "主页" || len(partition) == 0 {
-		db.Find(&posts)
+		if len(searchinfo) == 0 {
+			db.Find(&posts)
+		} else {
+			db.Where("title LIKE ? OR ptext LIKE ?", "%"+searchinfo+"%", "%"+searchinfo+"%").Find(&posts)
+		}
 	} else {
 		db.Find(&posts, "`partition` = ?", partition)
 	}
@@ -218,6 +224,53 @@ func UpdateLike(c *gin.Context) {
 			db.Create(&newLike)
 		}
 	}
+}
+
+type IDmsg struct {
+	PostID uint
+}
+
+func DeletePost(c *gin.Context) {
+	db := common.GetDB()
+	var ID IDmsg
+	c.Bind(&ID)
+	PostID := ID.PostID
+	var post model.Post
+	db.Where("postID = ?", PostID).First(&post)
+	db.Delete(&post)
+}
+
+type Reportmsg struct {
+	TargetID      uint
+	UserTelephone string
+	Reason        string
+}
+
+func SubmitReport(c *gin.Context) {
+	db := common.GetDB()
+	var reportmsg Reportmsg
+	c.Bind(&reportmsg)
+	TargetID := reportmsg.TargetID
+	userTelephone := reportmsg.UserTelephone
+	Reason := reportmsg.Reason
+	if len(Reason) == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "举报内容不能为空")
+		return
+	}
+	var user model.User
+	db.Where("phone = ?", userTelephone).First(&user)
+	newSue := model.Sue{
+		Targettype: "post",
+		TargetID:   int(TargetID),
+		UserID:     int(user.UserID),
+		User:       user,
+		Reason:     Reason,
+		Time:       time.Now(),
+		Status:     "wait",
+		Finish:     false,
+	}
+	db.Create(&newSue)
+	response.Response(c, http.StatusOK, 200, nil, "举报发送成功")
 }
 
 type PostDetailsResponse struct {
