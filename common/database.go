@@ -2,11 +2,12 @@ package common
 
 import (
 	"fmt"
+	"loginTest/model"
+
 	_ "github.com/alexbrainman/odbc"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	"github.com/spf13/viper"
-	"loginTest/model"
 )
 
 var DB *gorm.DB
@@ -40,6 +41,15 @@ func InitDB() *gorm.DB {
 	db.AutoMigrate(&model.Pclike{})
 	db.AutoMigrate(&model.Pcomment{})
 	db.AutoMigrate(&model.Ccomment{})
+	db.AutoMigrate(&model.Admin{})
+	db.AutoMigrate(&model.Feedback{})
+	db.AutoMigrate(&model.Notice{})
+	db.AutoMigrate(&model.Sue{})
+
+	db.Model(&model.Pcomment{}).AddForeignKey("ptargetID", "posts(postID)", "CASCADE", "CASCADE")
+	db.Model(&model.Plike{}).AddForeignKey("ptargetID", "posts(postID)", "CASCADE", "CASCADE")
+	db.Model(&model.Cclike{}).AddForeignKey("cctargetID", "ccomments(ccommentID)", "CASCADE", "CASCADE")
+	db.Model(&model.Pclike{}).AddForeignKey("pctargetID", "pcomments(pcommentID)", "CASCADE", "CASCADE")
 
 	DB = db
 	return db
