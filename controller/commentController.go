@@ -67,7 +67,7 @@ func GetComments(c *gin.Context) {
 			CommentTime:  pcomment.Time,
 			Content:      pcomment.Pctext,
 			LikeNum:      pcomment.LikeNum,
-			SubComments:  GetSubComments(pcomment),
+			SubComments:  GetSubComments(pcomment,temUser.UserID),
 			IsLiked:      isLike,
 		}
 		comments = append(comments, comment)
@@ -76,7 +76,7 @@ func GetComments(c *gin.Context) {
 }
 
 // GetSubComments 返回pcomment帖子的评论对应的子评论列表
-func GetSubComments(pcomment model.Pcomment) []Subcomment {
+func GetSubComments(pcomment model.Pcomment, userID int) []Subcomment {
 	db := common.GetDB()
 	var ccomments []model.Ccomment
 	db.Find(&ccomments, "ctargetID =?", pcomment.PcommentID)
@@ -84,7 +84,7 @@ func GetSubComments(pcomment model.Pcomment) []Subcomment {
 	for _, ccomment := range ccomments {
 		isLike := false
 		var like model.Cclike
-		db.Where("cctargetID =? AND userID =?", ccomment.CcommentID, pcomment.UserID).First(&like)
+		db.Where("cctargetID =? AND userID =?", ccomment.CcommentID, userID).First(&like)
 		if like.CclikeID != 0 {
 			isLike = true
 		}
@@ -141,7 +141,7 @@ func PostPcomment(c *gin.Context) {
 		CommentTime:  pcomment.Time,
 		Content:      pcomment.Pctext,
 		LikeNum:      pcomment.LikeNum,
-		SubComments:  GetSubComments(pcomment),
+		SubComments:  GetSubComments(pcomment,user.UserID),
 		IsLiked:      false,
 	}
 	c.JSON(http.StatusOK, comment)
