@@ -11,5 +11,5 @@ datasource:
   database: ssemarket
   username: root
   #密码
-  password: '0527'
+  password: 123456
   charset: utf8mb4
