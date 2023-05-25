@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// 采用jwt方式生成token
 var jwtKey = []byte("a_secret_crect")
 
 type Claims struct {
