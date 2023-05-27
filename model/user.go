@@ -13,6 +13,6 @@ type User struct {
 	Profile   string    `gorm:"column:profile;type:varchar(100)"`
 	Intro     string    `gorm:"column:intro;type:varchar(255)"`
 	IDpass    bool      `gorm:"column:idpass;type:tinyint(1)"`
-	Banend    time.Time `gorm:"column:ban;type:datetime"`
+	Banend    time.Time `gorm:"column:banend;type:datetime"`
 	Punishnum int       `gorm:"column:punishnum;type:int"`
 }
