@@ -11,6 +11,7 @@ import (
 
 func CollectRoute(r *gin.Engine) *gin.Engine {
 	r.Use(middleware.CORSMiddleware())
+	r.Use(middleware.AuthMiddleware())
 	r.POST("/api/auth/register", controller.Register)
 	r.POST("/api/auth/login", controller.Login)
 	r.POST("/api/auth/apiTest", api.ApiTest)
@@ -23,7 +24,7 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	r.POST("api/auth/postCcomment", controller.PostCcomment)
 	r.POST("api/auth/updateCcommentLike", controller.UpdateCcommentLike)
 	r.POST("api/auth/updatePcommentLike", controller.UpdatePcommentLike)
-	r.GET("/api/auth/info", middleware.AuthMiddleware(), controller.Info)
+
 	return r
 
 }

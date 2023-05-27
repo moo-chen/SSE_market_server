@@ -64,7 +64,7 @@
 - 头像 profile  varchar(50)
 - 简介 intro varchar(255)
 - 是否通过身份验证 idpass boolean /tinyint(1)
-- 是否被封禁 ban boolean/tinyint(1)
+- 解封禁时间 banend datetime
 - 被惩罚次数 punishnum int 
 
 ## 管理员 admin
