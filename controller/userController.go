@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
@@ -11,6 +12,7 @@ import (
 	"loginTest/response"
 	"loginTest/util"
 	"net/http"
+	"time"
 )
 
 func isTelephoneExist(db *gorm.DB, telephone string) bool {
@@ -144,4 +146,120 @@ func Login(c *gin.Context) {
 func Info(c *gin.Context) {
 	user, _ := c.Get("user")
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": gin.H{"user": dto.ToUserDto(user.(model.User))}})
+}
+
+func UploadAvatar(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		response.Response(c, http.StatusInternalServerError, 500, nil, "文件上传失败")
+		return
+	}
+
+	db := common.GetDB()
+	var user model.User
+
+	timestamp := time.Now().UnixNano()
+	filename := fmt.Sprintf("%d_%s", timestamp, file.Filename)
+	filepath := "public/uploads/" + filename
+
+	// 保存文件到本地
+	err = c.SaveUploadedFile(file, filepath)
+	if err != nil {
+		response.Response(c, http.StatusInternalServerError, 500, nil, "文件保存失败")
+		return
+	}
+
+	// 更新用户头像URL
+	// 我们存储的是可以通过 HTTP 访问的 URL，而不是服务器本地的文件路径
+	user.AvatarURL = "http://localhost:8080/uploads/" + filename
+	db.Save(&user)
+
+	// 返回成功
+	response.Success(c, gin.H{"phone": user.Phone, "avatar_url": user.AvatarURL}, "上传成功")
+}
+
+// GetAvatar 用于处理获取用户头像的请求
+func GetAvatar(c *gin.Context) {
+	// 连接数据库
+	db := common.GetDB()
+
+	// 从前端获取电话号码
+	phone := c.PostForm("phone")
+	// 在数据库中查找用户
+	var user model.User
+	if err := db.Where("phone = ?", phone).First(&user).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			response.Response(c, http.StatusUnprocessableEntity, 422, nil, "用户不存在")
+		} else {
+			response.Response(c, http.StatusInternalServerError, 500, nil, "数据库错误")
+		}
+		return
+	}
+
+	// 返回用户的头像URL
+	response.Success(c, gin.H{"phone": user.Phone, "AvatarURL": user.AvatarURL}, "获取成功")
+}
+func GetInfo(c *gin.Context) {
+	db := common.GetDB()
+	// 从前端获取电话号码
+	var requestUser = model.User{}
+	c.Bind(&requestUser)
+	phone := requestUser.Phone
+	// 在数据库中查找用户
+	var user model.User
+	if err := db.Where("phone = ?", phone).First(&user).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			response.Response(c, http.StatusUnprocessableEntity, 422, nil, "用户不存在")
+		} else {
+			response.Response(c, http.StatusInternalServerError, 500, nil, "数据库错误")
+		}
+		return
+	}
+	// 返回用户的所有信息
+	c.JSON(http.StatusOK, gin.H{
+		"userID":    user.UserID,
+		"phone":     user.Phone,
+		"email":     user.Email,
+		"name":      user.Name,
+		"num":       user.Num,
+		"intro":     user.Intro,
+		"ban":       user.Ban,
+		"punishnum": user.Punishnum,
+		"avatarURL": user.AvatarURL,
+	})
+}
+func UpdateUserInfo(c *gin.Context) {
+	db := common.GetDB()
+
+	// 解析请求参数
+	var userInfo model.User
+	if err := c.ShouldBindJSON(&userInfo); err != nil {
+		response.Response(c, http.StatusBadRequest, 400, nil, "参数解析错误")
+		return
+	}
+
+	// 根据用户ID查找用户
+	var user model.User
+	if err := db.Where("userID = ?", userInfo.UserID).First(&user).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			response.Response(c, http.StatusNotFound, 404, nil, "用户不存在")
+		} else {
+			response.Response(c, http.StatusInternalServerError, 500, nil, "数据库错误")
+		}
+		return
+	}
+
+	// 更新用户信息
+	user.Name = userInfo.Name
+	user.Num = userInfo.Num
+	user.Intro = userInfo.Intro
+	user.Ban = userInfo.Ban
+	user.Punishnum = userInfo.Punishnum
+	user.AvatarURL = userInfo.AvatarURL
+
+	if err := db.Save(&user).Error; err != nil {
+		response.Response(c, http.StatusInternalServerError, 500, nil, "数据库错误")
+		return
+	}
+	response.Response(c, http.StatusOK, 200, nil, "用户信息更新成功")
 }

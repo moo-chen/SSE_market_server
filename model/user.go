@@ -8,9 +8,9 @@ type User struct {
 	Password  string `gorm:"column:password;type:varchar(255)"`
 	Name      string `gorm:"column:name;type:varchar(50)"`
 	Num       int    `gorm:"column:num;type:int"`
-	Profile   string `gorm:"column:profile;type:varchar(100)"`
 	Intro     string `gorm:"column:intro;type:varchar(255)"`
 	IDpass    bool   `gorm:"column:idpass;type:tinyint(1)"`
 	Ban       bool   `gorm:"column:ban;type:tinyint(1)"`
 	Punishnum int    `gorm:"column:punishnum;type:int"`
+	AvatarURL string `gorm:"column:avatar_url;type:varchar(255)"`
 }
