@@ -70,6 +70,7 @@ func Register(c *gin.Context) {
 		Name:     name,
 		Phone:    telephone,
 		Password: string(hasedPassword),
+		Banend:   time.Now(),
 	}
 	// 将结构体传进Create函数即可在数据库中添加一条记录
 	// 其他的增删查改功能参见postController里的updateLike函数
