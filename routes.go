@@ -27,6 +27,6 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	r.POST("/api/auth/deletePost", controller.DeletePost)
 	r.POST("/api/auth/submitReport", controller.SubmitReport)
 	r.GET("/api/auth/info", middleware.AuthMiddleware(), controller.Info)
+	r.POST("/api/auth/uploadphotos", controller.UploadPhotos)
 	return r
-
 }
