@@ -63,11 +63,11 @@ func GetComments(c *gin.Context) {
 		comment := CommentResponse{
 			PcommentID:   pcomment.PcommentID,
 			Author:       commentuser.Name,
-			AuthorAvatar: commentuser.Profile,
+			AuthorAvatar: commentuser.AvatarURL,
 			CommentTime:  pcomment.Time,
 			Content:      pcomment.Pctext,
 			LikeNum:      pcomment.LikeNum,
-			SubComments:  GetSubComments(pcomment,temUser.UserID),
+			SubComments:  GetSubComments(pcomment, temUser.UserID),
 			IsLiked:      isLike,
 		}
 		comments = append(comments, comment)
@@ -93,7 +93,7 @@ func GetSubComments(pcomment model.Pcomment, userID int) []Subcomment {
 		comment := Subcomment{
 			CcommentID:     ccomment.CcommentID,
 			Author:         commentuser.Name,
-			AuthorAvatar:   commentuser.Profile,
+			AuthorAvatar:   commentuser.AvatarURL,
 			CommentTime:    ccomment.Time,
 			Content:        ccomment.Cctext,
 			LikeNum:        ccomment.LikeNum,
@@ -125,7 +125,7 @@ func PostPcomment(c *gin.Context) {
 	//	return
 	//}
 	var user model.User
-	db.Where("phone =?", msg.UserTelephone).First(&user)
+	db.Where("phone = ?", msg.UserTelephone).First(&user)
 	pcomment := model.Pcomment{
 		UserID:    user.UserID,
 		PtargetID: msg.PostID,
@@ -134,14 +134,17 @@ func PostPcomment(c *gin.Context) {
 		LikeNum:   0,
 	}
 	db.Create(&pcomment)
+	var post model.Post
+	db.Where("postID = ?", msg.PostID).First(&post)
+	db.Model(&post).Update("comment_num", post.CommentNum+1)
 	comment := CommentResponse{
 		PcommentID:   pcomment.PcommentID,
 		Author:       user.Name,
-		AuthorAvatar: user.Profile,
+		AuthorAvatar: user.AvatarURL,
 		CommentTime:  pcomment.Time,
 		Content:      pcomment.Pctext,
 		LikeNum:      pcomment.LikeNum,
-		SubComments:  GetSubComments(pcomment,user.UserID),
+		SubComments:  GetSubComments(pcomment, user.UserID),
 		IsLiked:      false,
 	}
 	c.JSON(http.StatusOK, comment)
@@ -151,6 +154,7 @@ func PostPcomment(c *gin.Context) {
 type CcommentMsg struct {
 	UserTelephone  string `json:"userTelephone"`
 	PcommentID     int    `json:"pcommentID"`
+	PostID         int    `json:"postID"`
 	Content        string `json:"content"`
 	UserTargetName string `json:"userTargetName"`
 }
@@ -186,6 +190,9 @@ func PostCcomment(c *gin.Context) {
 		LikeNum:        0,
 		UserTargetName: msg.UserTargetName,
 	}
+	var post model.Post
+	db.Where("postID = ?", msg.PostID).First(&post)
+	db.Model(&post).Update("comment_num", post.CommentNum+1)
 	db.Create(&newCcomment)
 	response.Response(c, http.StatusOK, 200, nil, "评论成功！")
 }
