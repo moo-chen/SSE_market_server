@@ -63,11 +63,11 @@ func GetComments(c *gin.Context) {
 		comment := CommentResponse{
 			PcommentID:   pcomment.PcommentID,
 			Author:       commentuser.Name,
-			AuthorAvatar: commentuser.Profile,
+			AuthorAvatar: commentuser.AvatarURL,
 			CommentTime:  pcomment.Time,
 			Content:      pcomment.Pctext,
 			LikeNum:      pcomment.LikeNum,
-			SubComments:  GetSubComments(pcomment,temUser.UserID),
+			SubComments:  GetSubComments(pcomment, temUser.UserID),
 			IsLiked:      isLike,
 		}
 		comments = append(comments, comment)
@@ -93,7 +93,7 @@ func GetSubComments(pcomment model.Pcomment, userID int) []Subcomment {
 		comment := Subcomment{
 			CcommentID:     ccomment.CcommentID,
 			Author:         commentuser.Name,
-			AuthorAvatar:   commentuser.Profile,
+			AuthorAvatar:   commentuser.AvatarURL,
 			CommentTime:    ccomment.Time,
 			Content:        ccomment.Cctext,
 			LikeNum:        ccomment.LikeNum,
@@ -140,11 +140,11 @@ func PostPcomment(c *gin.Context) {
 	comment := CommentResponse{
 		PcommentID:   pcomment.PcommentID,
 		Author:       user.Name,
-		AuthorAvatar: user.Profile,
+		AuthorAvatar: user.AvatarURL,
 		CommentTime:  pcomment.Time,
 		Content:      pcomment.Pctext,
 		LikeNum:      pcomment.LikeNum,
-		SubComments:  GetSubComments(pcomment,user.UserID),
+		SubComments:  GetSubComments(pcomment, user.UserID),
 		IsLiked:      false,
 	}
 	c.JSON(http.StatusOK, comment)
@@ -154,7 +154,7 @@ func PostPcomment(c *gin.Context) {
 type CcommentMsg struct {
 	UserTelephone  string `json:"userTelephone"`
 	PcommentID     int    `json:"pcommentID"`
-	PostID        int		`json:"postID"`
+	PostID         int    `json:"postID"`
 	Content        string `json:"content"`
 	UserTargetName string `json:"userTargetName"`
 }

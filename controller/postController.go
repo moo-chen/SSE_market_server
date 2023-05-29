@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
@@ -17,6 +18,7 @@ type PostMsg struct {
 	Title         string
 	Content       string
 	Partition     string
+	Photos        string
 }
 
 func Post(c *gin.Context) {
@@ -28,6 +30,7 @@ func Post(c *gin.Context) {
 	title := requestPostMsg.Title
 	content := requestPostMsg.Content
 	partition := requestPostMsg.Partition
+	photos := requestPostMsg.Photos
 	// 验证数据
 	if len(userTelephone) == 0 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "返回的手机号为空")
@@ -77,6 +80,7 @@ func Post(c *gin.Context) {
 		Ptext:     content,
 		Heat:      0,
 		PostTime:  time.Now(),
+		Photos:    photos,
 	}
 	db.Create(&newPost)
 	response.Response(c, http.StatusOK, 200, nil, "发帖成功")
@@ -284,6 +288,7 @@ type PostDetailsResponse struct {
 	PostTime      time.Time
 	IsSaved       bool
 	IsLiked       bool
+	Photos        string
 }
 
 type PostDetailsMsg struct {
@@ -326,6 +331,37 @@ func ShowDetails(c *gin.Context) {
 		PostTime:      post.PostTime,
 		IsSaved:       isSaved,
 		IsLiked:       isLiked,
+		Photos:        post.Photos,
 	}
 	c.JSON(http.StatusOK, postDetailsResponse)
+}
+func UploadPhotos(c *gin.Context) {
+	//UserID := c.PostForm("UserID")
+	// 获取前端传过来 图片
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "文件上传失败"})
+		return
+	}
+
+	// 文件保存路径和文件名可以根据实际情况修改
+	// 文件名我们采用了当前时间戳和原始文件名的组合，以避免文件名冲突
+	// 时间戳采用 nanoseconds 级别，可以几乎确保每个文件名都是唯一的
+	timestamp := time.Now().UnixNano()
+	filename := fmt.Sprintf("%d_%s", timestamp, file.Filename)
+	filepath := "public/uploads/" + filename
+
+	// 保存文件到本地
+	err = c.SaveUploadedFile(file, filepath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "文件保存失败"})
+		return
+	}
+
+	// 更新 Post 的 Photos 字段
+	// 我们存储的是可以通过 HTTP 访问的 URL，而不是服务器本地的文件路径
+	fileURL := "http://localhost:8080/uploads/" + filename
+
+	// 返回成功
+	c.JSON(http.StatusOK, gin.H{"fileURL": fileURL, "message": "上传成功"})
 }
