@@ -224,7 +224,7 @@ func GetInfo(c *gin.Context) {
 		"name":      user.Name,
 		"num":       user.Num,
 		"intro":     user.Intro,
-		"ban":       user.Ban,
+		"ban":       user.Banend,
 		"punishnum": user.Punishnum,
 		"avatarURL": user.AvatarURL,
 	})
@@ -254,7 +254,7 @@ func UpdateUserInfo(c *gin.Context) {
 	user.Name = userInfo.Name
 	user.Num = userInfo.Num
 	user.Intro = userInfo.Intro
-	user.Ban = userInfo.Ban
+	user.Banend = userInfo.Banend 
 	user.Punishnum = userInfo.Punishnum
 	user.AvatarURL = userInfo.AvatarURL
 
