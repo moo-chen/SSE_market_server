@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 	"unicode/utf8"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -350,7 +349,6 @@ func UploadPhotos(c *gin.Context) {
 	timestamp := time.Now().UnixNano()
 	filename := fmt.Sprintf("%d_%s", timestamp, file.Filename)
 	filepath := "public/uploads/" + filename
-
 	// 保存文件到本地
 	err = c.SaveUploadedFile(file, filepath)
 	if err != nil {
