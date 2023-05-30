@@ -229,11 +229,23 @@ func GetInfo(c *gin.Context) {
 		"avatarURL": user.AvatarURL,
 	})
 }
+
+type updateUser struct {
+	UserID    int    `json:"userID"`
+	Phone     string `json:"phone"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	Name      string `json:"name"`
+	Num       int    `json:"num"`
+	Intro     string `json:"intro"`
+	AvatarURL string `json:"avatarURL"`
+}
+
 func UpdateUserInfo(c *gin.Context) {
 	db := common.GetDB()
 
 	// 解析请求参数
-	var userInfo model.User
+	var userInfo updateUser
 	if err := c.ShouldBindJSON(&userInfo); err != nil {
 		response.Response(c, http.StatusBadRequest, 400, nil, "参数解析错误")
 		return
@@ -254,8 +266,6 @@ func UpdateUserInfo(c *gin.Context) {
 	user.Name = userInfo.Name
 	user.Num = userInfo.Num
 	user.Intro = userInfo.Intro
-	user.Banend = userInfo.Banend 
-	user.Punishnum = userInfo.Punishnum
 	user.AvatarURL = userInfo.AvatarURL
 
 	if err := db.Save(&user).Error; err != nil {

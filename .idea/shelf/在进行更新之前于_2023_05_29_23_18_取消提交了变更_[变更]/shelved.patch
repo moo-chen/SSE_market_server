@@ -1,0 +1,71 @@
+Index: main.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package main\r\nimport (\r\n\t\"loginTest/common\"\r\n\t\"os\"\r\n\t_ \"github.com/alexbrainman/odbc\"\r\n\t\"github.com/gin-gonic/gin\"\r\n\t\"github.com/spf13/viper\"\r\n\t\r\n)\r\n\r\nfunc main() {\r\n\tInitConfig()\r\n\tdb := common.InitDB()\r\n\tdefer db.Close()\r\n\tr := gin.Default()\r\n\tCollectRoute(r)\r\n\tport := viper.GetString(\"server.port\")\r\n\tif port !=\"\" {\r\n\t\tpanic(r.Run(\":\"+port))\r\n\t}\r\n\tpanic(r.Run())\r\n}\r\n\r\n// 使用viper从配置文件中读取配置\r\nfunc InitConfig() {\r\n\twordDir, _ := os.Getwd()\r\n\tviper.SetConfigName(\"application\")\r\n\tviper.SetConfigType(\"yml\")\r\n\tviper.AddConfigPath(wordDir+\"/config\")\r\n\terr := viper.ReadInConfig()\r\n\tif err != nil {\r\n\t\tpanic(err)\r\n\t}\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/main.go b/main.go
+--- a/main.go	(revision a2a936db9b1eda066bfaa535dc53773ca8727064)
++++ b/main.go	(date 1685250145457)
+@@ -1,11 +1,11 @@
+ package main
++
+ import (
+-	"loginTest/common"
+-	"os"
+ 	_ "github.com/alexbrainman/odbc"
+ 	"github.com/gin-gonic/gin"
+ 	"github.com/spf13/viper"
+-	
++	"loginTest/common"
++	"os"
+ )
+ 
+ func main() {
+@@ -15,8 +15,8 @@
+ 	r := gin.Default()
+ 	CollectRoute(r)
+ 	port := viper.GetString("server.port")
+-	if port !="" {
+-		panic(r.Run(":"+port))
++	if port != "" {
++		panic(r.Run(":" + port))
+ 	}
+ 	panic(r.Run())
+ }
+@@ -26,9 +26,9 @@
+ 	wordDir, _ := os.Getwd()
+ 	viper.SetConfigName("application")
+ 	viper.SetConfigType("yml")
+-	viper.AddConfigPath(wordDir+"/config")
++	viper.AddConfigPath(wordDir + "/config")
+ 	err := viper.ReadInConfig()
+ 	if err != nil {
+ 		panic(err)
+ 	}
+-}
+\ No newline at end of file
++}
+Index: config/application.yml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># 配置文件\r\nserver:\r\n# 监听端口号，默认8080\r\n  port:8080\r\n#数据库配置\r\ndatasource:\r\n  driverName: mysql\r\n  host: 127.0.0.1\r\n  port: 3306\r\n  #数据库名称\r\n  database: ssemarket\r\n  username: root\r\n  #密码\r\n  password: moochen0613\r\n  charset: utf8mb4
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/config/application.yml b/config/application.yml
+--- a/config/application.yml	(revision a2a936db9b1eda066bfaa535dc53773ca8727064)
++++ b/config/application.yml	(date 1685169289242)
+@@ -8,8 +8,8 @@
+   host: 127.0.0.1
+   port: 3306
+   #数据库名称
+-  database: ssemarket
++  database: ssemarket1
+   username: root
+   #密码
+-  password: moochen0613
++  password: '0527'
+   charset: utf8mb4
+\ No newline at end of file
