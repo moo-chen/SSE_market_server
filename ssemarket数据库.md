@@ -114,6 +114,7 @@
   - 被惩罚 punish
   - 反馈 feedback
 - 通知内容 ntext varchar(1000）
+- 通知时间 time datetime
 - 通知目标 target int
 - 是否已读 read tinyint(1)
 

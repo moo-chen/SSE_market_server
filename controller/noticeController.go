@@ -59,8 +59,7 @@ func GetNotice(c *gin.Context) {
 				PostID:       tempcomment.PtargetID,
 				Time:         temccoment.Time,
 			})
-		}
-		if notice.Type == "pcomment" {
+		} else if notice.Type == "pcomment" {
 			db.Where("pcommentID =?", notice.Target).First(&tempcomment)
 			noticeResponse = append(noticeResponse, NoticeResponse{
 				NoticeID:     notice.NoticeID,
@@ -74,6 +73,18 @@ func GetNotice(c *gin.Context) {
 				PostID:       tempcomment.PtargetID,
 				Time:         tempcomment.Time,
 			})
+		} else {
+			noticeResponse = append(noticeResponse, NoticeResponse{
+				NoticeID:     notice.NoticeID,
+				ReceiverName: user.Name,
+				SenderName:   temuser.Name,
+				SenderAvatar: temuser.AvatarURL,
+				Type:         notice.Type,
+				Content:      notice.Ntext,
+				Read:         notice.Read,
+				Target:       notice.Target,
+			})
+
 		}
 
 	}
