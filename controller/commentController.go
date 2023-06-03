@@ -154,6 +154,7 @@ func PostPcomment(c *gin.Context) {
 			Sender:   user.UserID,
 			Type:     "pcomment",
 			Ntext:    msg.Content,
+			Time:     time.Now(),
 			Read:     false,
 			Target:   pcomment.PcommentID,
 		}
@@ -230,6 +231,7 @@ func PostCcomment(c *gin.Context) {
 			Sender:   user.UserID,
 			Type:     "ccomment",
 			Ntext:    msg.Content,
+			Time:     time.Now(),
 			Read:     false,
 			Target:   newCcomment.CcommentID,
 		}
