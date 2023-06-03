@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
@@ -9,7 +10,6 @@ import (
 	"net/http"
 	"time"
 	"unicode/utf8"
-	"github.com/gin-gonic/gin"
 )
 
 type PostMsg struct {
@@ -89,6 +89,7 @@ type PostResponse struct {
 	PostID        uint
 	UserName      string
 	UserTelephone string
+	UserAvatar    string
 	Title         string
 	Content       string
 	Like          int
@@ -96,6 +97,7 @@ type PostResponse struct {
 	PostTime      time.Time
 	IsSaved       bool
 	IsLiked       bool
+	Photos        string
 }
 
 type BrowseMeg struct {
@@ -144,6 +146,7 @@ func Browse(c *gin.Context) {
 			PostID:        uint(post.PostID),
 			UserName:      user.Name,
 			UserTelephone: user.Phone,
+			UserAvatar:    user.AvatarURL,
 			Title:         post.Title,
 			Content:       post.Ptext,
 			Like:          post.LikeNum,
@@ -151,6 +154,7 @@ func Browse(c *gin.Context) {
 			PostTime:      post.PostTime,
 			IsSaved:       isSaved,
 			IsLiked:       isLiked,
+			Photos:        post.Photos,
 		}
 		postResponses = append(postResponses, postResponse)
 	}
@@ -280,6 +284,7 @@ type PostDetailsResponse struct {
 	PostID        uint
 	UserName      string
 	UserTelephone string
+	UserAvatar    string
 	Title         string
 	Content       string
 	Like          int
@@ -323,6 +328,7 @@ func ShowDetails(c *gin.Context) {
 		PostID:        uint(post.PostID),
 		UserName:      user.Name,
 		UserTelephone: user.Phone,
+		UserAvatar:    user.AvatarURL,
 		Title:         post.Title,
 		Content:       post.Ptext,
 		Like:          post.LikeNum,
