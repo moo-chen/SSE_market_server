@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"loginTest/api"
 	"loginTest/common"
@@ -14,6 +15,38 @@ import (
 	"loginTest/util"
 	"net/http"
 )
+
+type registerUser struct {
+	Name      string `gorm:"type:varchar(20);not null"`
+	Phone     string `gorm:"type:varchar(11);not null"`
+	Password  string `gorm:"size:255;not null"`
+	Password2 string `gorm:"size:255;not null"`
+	Email     string `gorm:"type:varchar(11);not null"`
+	ValiCode  string `gorm:"type:varchar(10);not null"`
+}
+
+type identity struct {
+	Email    string `gorm:"type:varchar(11);not null"`
+	ValiCode string `gorm:"type:varchar(10);not null"`
+}
+
+type loginuser struct {
+	gorm.Model
+	Name     string `gorm:"type:varchar(20);not null"`
+	Phone    string `gorm:"type:varchar(11);not null"`
+	Password string `gorm:"size:255;not null"`
+}
+
+type modifyUser struct {
+	Phone     string `gorm:"type:varchar(11);not null"`
+	Password  string `gorm:"size:255;not null"`
+	Password2 string `gorm:"size:255;not null"`
+}
+
+type requestEmail struct {
+	Email string `gorm:"type:varchar(11);not null"`
+	Mode  int
+}
 
 func isTelephoneExist(db *gorm.DB, telephone string) bool {
 	var user model.User
@@ -33,41 +66,41 @@ func isEmailExist(db *gorm.DB, email string) bool {
 	return false
 }
 
-type registerUser struct {
-	gorm.Model
-	Name     string `gorm:"type:varchar(20);not null"`
-	Phone    string `gorm:"type:varchar(11);not null"`
-	Password string `gorm:"size:255;not null"`
-	Email    string `gorm:"type:varchar(11);not null"`
-	ValiCode string `gorm:"type:varchar(10);not null"`
-}
-
 func Register(c *gin.Context) {
 	// 连接数据库
 	db := common.GetDB()
 	// 从前端获取信息
 	var requestUser = registerUser{}
 	c.Bind(&requestUser)
+	fmt.Println(requestUser)
 	//获取参数
 	name := requestUser.Name
 	telephone := requestUser.Phone
-	password := requestUser.Password
+	password1 := requestUser.Password
+	password2 := requestUser.Password2
 	email := requestUser.Email
 	valiCode := requestUser.ValiCode
-
 	//验证数据
 	if len(telephone) != 11 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "手机号必须为11位!!!")
 		println(telephone)
 		return
 	}
-	if len(password) < 6 {
+	if len(password1) < 6 {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "密码不能少于6位")
+		return
+	}
+	if len(password2) < 6 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "密码不能少于6位")
 		return
 	}
 	//如果名称没有传，给一个10位的随机字符串
 	if len(name) == 0 {
 		name = util.RandomString(10)
+	}
+	if password1 != password2 {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "两次密码不相同，请重新输入")
+		return
 	}
 	check := false
 	for i := 0; i < len(email); i++ {
@@ -102,12 +135,12 @@ func Register(c *gin.Context) {
 		return
 	}
 	// 创建用户
-	hasedPassword := password
-	//hasedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	//if err != nil {
-	//	response.Response(c, http.StatusInternalServerError, 500, nil, "密码加密错误")
-	//	return
-	//}
+	// hasedPassword := password
+	hasedPassword, err := bcrypt.GenerateFromPassword([]byte(password1), bcrypt.DefaultCost)
+	if err != nil {
+		response.Response(c, http.StatusInternalServerError, 500, nil, "密码加密错误")
+		return
+	}
 	// 创建新用户结构体
 	newUser := model.User{
 		Name:     name,
@@ -133,11 +166,6 @@ func Register(c *gin.Context) {
 	//返回结果
 	response.Success(c, gin.H{"token": token}, "注册成功")
 	rds.Del(ctx, email)
-}
-
-type identity struct {
-	Email    string `gorm:"type:varchar(11);not null"`
-	ValiCode string `gorm:"type:varchar(10);not null"`
 }
 
 func IdentityValidate(c *gin.Context) {
@@ -192,13 +220,6 @@ func IdentityValidate(c *gin.Context) {
 	rds.Del(ctx, email)
 }
 
-type loginuser struct {
-	gorm.Model
-	Name     string `gorm:"type:varchar(20);not null"`
-	Phone    string `gorm:"type:varchar(11);not null"`
-	Password string `gorm:"size:255;not null"`
-}
-
 func Login(c *gin.Context) {
 	db := common.GetDB()
 	var requestUser = loginuser{}
@@ -230,7 +251,7 @@ func Login(c *gin.Context) {
 	}
 	//判断密码是否正确
 	//if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-	if user.Password != password {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		response.Response(c, http.StatusBadRequest, 400, nil, "密码错误")
 		return
 	}
@@ -246,12 +267,6 @@ func Login(c *gin.Context) {
 	response.Success(c, gin.H{"token": token}, "登录成功")
 }
 
-type modifyUser struct {
-	Phone     string `gorm:"type:varchar(11);not null"`
-	Password  string `gorm:"size:255;not null"`
-	Password2 string `gorm:"size:255;not null"`
-}
-
 func ModifyPassword(c *gin.Context) {
 	fmt.Println("Successfully deliver!")
 	db := common.GetDB()
@@ -261,9 +276,9 @@ func ModifyPassword(c *gin.Context) {
 	phone := inputUser.Phone
 	password := inputUser.Password
 	password2 := inputUser.Password2
-	fmt.Println(phone)
-	fmt.Println(password)
-	fmt.Println(password2)
+	//fmt.Println(phone)
+	//fmt.Println(password)
+	//fmt.Println(password2)
 	if password != password2 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "密码输入不一致")
 		return
@@ -272,21 +287,22 @@ func ModifyPassword(c *gin.Context) {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "未找到电话")
 		return
 	}
+
+	hasedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		response.Response(c, http.StatusInternalServerError, 500, nil, "密码加密错误")
+		return
+	}
 	db.Where("phone = ?", phone).First(&user)
-	fmt.Println(phone)
-	fmt.Println(password)
+	//fmt.Println(phone)
+	//fmt.Println(password)
 	if user.UserID == 0 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "用户不存在")
 		return
 	}
-	user.Password = password
+	user.Password = string(hasedPassword)
 	db.Save(&user)
 	response.Success(c, gin.H{"data": user}, "修改密码成功")
-}
-
-type requestEmail struct {
-	Email string `gorm:"type:varchar(11);not null"`
-	Mode  int
 }
 
 func ValidateEmail(c *gin.Context) {
@@ -295,6 +311,10 @@ func ValidateEmail(c *gin.Context) {
 	email := request.Email
 	mode := request.Mode
 	db := common.DB
+	if mode == 1 && !isEmailExist(db, email) {
+		response.Response(c, http.StatusBadRequest, 400, gin.H{"data": email, "mode": mode}, "该邮箱未注册，请先完成注册操作")
+		return
+	}
 	if mode == 0 && isEmailExist(db, email) {
 		response.Response(c, http.StatusBadRequest, 400, gin.H{"data": email, "mode": mode}, "邮箱已注册")
 		return

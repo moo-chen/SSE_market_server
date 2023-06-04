@@ -35,7 +35,7 @@ func saveVcode(vcode, receiver string) {
 	if err == nil {
 		rds.Del(ctx, receiver)
 	}
-	rds.Set(ctx, receiver, vcode, 0)
+	rds.Set(ctx, receiver, vcode, 5*time.Minute)
 }
 
 func SendEmail(receiver string) error {
