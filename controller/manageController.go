@@ -93,9 +93,23 @@ func AddAdmin(ctx *gin.Context) {
 	pass1 := newAdmin.Password1
 	pass2 := newAdmin.Password2
 	var admin model.Admin
+	if account == "" {
+		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "账号不能为空")
+		return
+	}
+
+	if pass1 == "" || pass2 == "" {
+		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "密码不能为空")
+		return
+	}
 
 	if pass1 != pass2 {
 		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "两次密码不同，请重新输入")
+		return
+	}
+
+	if len(pass1) < 6 {
+		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "密码必须大于等于6位")
 		return
 	}
 
