@@ -2,12 +2,11 @@ package common
 
 import (
 	"fmt"
-	"loginTest/model"
-
-	_ "github.com/alexbrainman/odbc"
+	//_ "github.com/alexbrainman/odbc"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	"github.com/spf13/viper"
+	"loginTest/model"
 )
 
 var DB *gorm.DB

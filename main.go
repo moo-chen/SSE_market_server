@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "github.com/alexbrainman/odbc"
+	// _ "github.com/alexbrainman/odbc"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"loginTest/common"
@@ -12,6 +12,8 @@ import (
 func main() {
 	InitConfig()
 	db := common.InitDB()
+	rds := common.RedisInit()
+	defer rds.Close()
 	defer db.Close()
 	r := gin.Default()
 
