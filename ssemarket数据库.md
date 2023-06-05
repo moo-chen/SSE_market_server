@@ -113,6 +113,7 @@
   - 评论被评论 ccomment
   - 被惩罚 punish
   - 反馈 feedback
+  - 举报回复 sue
 - 通知内容 ntext varchar(1000）
 - 通知时间 time datetime
 - 通知目标 target int
