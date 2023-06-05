@@ -185,6 +185,7 @@ type CcommentMsg struct {
 	PostID         int    `json:"postID"`
 	Content        string `json:"content"`
 	UserTargetName string `json:"userTargetName"`
+	CcommentID     int    `json:"ccommentID"`
 }
 
 // PostCcomment 发表评论的评论
@@ -223,9 +224,10 @@ func PostCcomment(c *gin.Context) {
 	db.Create(&newCcomment)
 	var tempcomment model.Pcomment
 	db.Where("pcommentID =?", msg.PcommentID).First(&tempcomment)
-	// 如果是用户自己回复自己的评论，那么不需要通知
+	// 如果是评论的评论
+	// 如果是用户在自己发的一级评论下发回复，那么不需要通知
 	if tempcomment.UserID != user.UserID {
-		notice := model.Notice{
+		notice1 := model.Notice{
 			Receiver: tempcomment.UserID,
 			User:     model.User{},
 			Sender:   user.UserID,
@@ -236,8 +238,29 @@ func PostCcomment(c *gin.Context) {
 			Target:   newCcomment.CcommentID,
 		}
 		// 数据库创建一条通知
-		db.Create(&notice)
+		db.Create(&notice1)
 	}
+	// 如果是二级评论的回复
+	if msg.UserTargetName != "" {
+		var temccomment model.Ccomment
+		db.Where("ccommentID =?", msg.CcommentID).First(&temccomment)
+		// 如果是自己回复自己就不用发通知,还有一种情况，就是上面的一级回复已经发了通知，这里就不需要重发了
+		if temccomment.UserID != user.UserID && tempcomment.UserID != temccomment.UserID {
+			notice2 := model.Notice{
+				Receiver: temccomment.UserID,
+				User:     model.User{},
+				Sender:   user.UserID,
+				Type:     "ccomment",
+				Ntext:    msg.Content,
+				Time:     time.Now(),
+				Read:     false,
+				Target:   newCcomment.CcommentID,
+			}
+			// 数据库创建一条通知
+			db.Create(&notice2)
+		}
+	}
+	// 如果是评论的回复
 
 	var post model.Post
 	db.Where("postID = ?", msg.PostID).First(&post)
