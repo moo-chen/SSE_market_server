@@ -40,5 +40,14 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	auth.POST("/api/auth/updateUserInfo", controller.UpdateUserInfo)
 	auth.GET("/api/auth/getNotice", controller.GetNotice)
 	auth.PATCH("api/auth/readNotice/:noticeID", controller.ReadNotice)
+	noauth.POST("/api/auth/modifyPassword", controller.ModifyPassword)
+	noauth.POST("/api/auth/validateEmail", controller.ValidateEmail)
+	noauth.POST("/api/auth/identityValidate", controller.IdentityValidate)
+	r.POST("/api/auth/passUsers", controller.PassUsers)
+	r.POST("/api/auth/addAdmin", controller.AddAdmin)
+	r.POST("/api/auth/changePassword", controller.ChangeAdminPassword)
+	r.POST("/api/auth/deleteUser", controller.DeleteUser)
+	r.POST("/api/auth/deleteAdmin", controller.DeleteAdmin)
+	r.POST("/api/auth/showUsers", controller.ShowFilterUsers)
 	return r
 }
