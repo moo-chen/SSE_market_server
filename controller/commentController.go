@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
+	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
 	"loginTest/response"
@@ -120,12 +121,22 @@ func PostPcomment(c *gin.Context) {
 	db := common.GetDB()
 	var msg PcommentMsg
 	c.Bind(&msg)
-	//if api.GetSuggestion(msg.Content) == "Block" {
-	//	response.Response(c, http.StatusBadRequest, 400, nil, "评论内容含有不良信息,请重新编辑")
-	//	return
-	//}
+	if len(msg.Content) == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容不能为空")
+		return
+	}
+	if len(msg.UserTelephone) == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "评论人不能为空")
+		return
+	}
+	if api.GetSuggestion(msg.Content) == "Block" {
+		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容含有不良信息,请重新编辑")
+		return
+	}
 	var user model.User
+	var tempost model.Post
 	db.Where("phone = ?", msg.UserTelephone).First(&user)
+	db.Where("postID =?", msg.PostID).First(&tempost)
 	pcomment := model.Pcomment{
 		UserID:    user.UserID,
 		PtargetID: msg.PostID,
@@ -133,7 +144,24 @@ func PostPcomment(c *gin.Context) {
 		Time:      time.Now(),
 		LikeNum:   0,
 	}
+	// 创建一条帖子评论
 	db.Create(&pcomment)
+	// 如果用户自己评论自己的帖子，则不用通知
+	if tempost.UserID != user.UserID {
+		notice := model.Notice{
+			Receiver: tempost.UserID,
+			User:     model.User{},
+			Sender:   user.UserID,
+			Type:     "pcomment",
+			Ntext:    msg.Content,
+			Time:     time.Now(),
+			Read:     false,
+			Target:   pcomment.PcommentID,
+		}
+		// 创建一条通知
+		db.Create(&notice)
+	}
+
 	var post model.Post
 	db.Where("postID = ?", msg.PostID).First(&post)
 	db.Model(&post).Update("comment_num", post.CommentNum+1)
@@ -157,6 +185,7 @@ type CcommentMsg struct {
 	PostID         int    `json:"postID"`
 	Content        string `json:"content"`
 	UserTargetName string `json:"userTargetName"`
+	CcommentID     int    `json:"ccommentID"`
 }
 
 // PostCcomment 发表评论的评论
@@ -175,11 +204,12 @@ func PostCcomment(c *gin.Context) {
 	}
 	if len(msg.UserTelephone) == 0 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "评论人不能为空")
+		return
 	}
-	//if api.GetSuggestion(content) == "Block" {
-	//	response.Response(c, http.StatusBadRequest, 400, nil, "评论内容含有不良信息,请重新编辑")
-	//	return
-	//}
+	if api.GetSuggestion(content) == "Block" {
+		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容含有不良信息,请重新编辑")
+		return
+	}
 	var user model.User
 	db.Where("phone =?", msg.UserTelephone).First(&user)
 	newCcomment := model.Ccomment{
@@ -190,10 +220,51 @@ func PostCcomment(c *gin.Context) {
 		LikeNum:        0,
 		UserTargetName: msg.UserTargetName,
 	}
+	// 数据库创建一条新的评论的评论
+	db.Create(&newCcomment)
+	var tempcomment model.Pcomment
+	db.Where("pcommentID =?", msg.PcommentID).First(&tempcomment)
+	// 如果是评论的评论
+	// 如果是用户在自己发的一级评论下发回复，那么不需要通知
+	if tempcomment.UserID != user.UserID {
+		notice1 := model.Notice{
+			Receiver: tempcomment.UserID,
+			User:     model.User{},
+			Sender:   user.UserID,
+			Type:     "ccomment",
+			Ntext:    msg.Content,
+			Time:     time.Now(),
+			Read:     false,
+			Target:   newCcomment.CcommentID,
+		}
+		// 数据库创建一条通知
+		db.Create(&notice1)
+	}
+	// 如果是二级评论的回复
+	if msg.UserTargetName != "" {
+		var temccomment model.Ccomment
+		db.Where("ccommentID =?", msg.CcommentID).First(&temccomment)
+		// 如果是自己回复自己就不用发通知,还有一种情况，就是上面的一级回复已经发了通知，这里就不需要重发了
+		if temccomment.UserID != user.UserID && tempcomment.UserID != temccomment.UserID {
+			notice2 := model.Notice{
+				Receiver: temccomment.UserID,
+				User:     model.User{},
+				Sender:   user.UserID,
+				Type:     "ccomment",
+				Ntext:    msg.Content,
+				Time:     time.Now(),
+				Read:     false,
+				Target:   newCcomment.CcommentID,
+			}
+			// 数据库创建一条通知
+			db.Create(&notice2)
+		}
+	}
+	// 如果是评论的回复
+
 	var post model.Post
 	db.Where("postID = ?", msg.PostID).First(&post)
 	db.Model(&post).Update("comment_num", post.CommentNum+1)
-	db.Create(&newCcomment)
 	response.Response(c, http.StatusOK, 200, nil, "评论成功！")
 }
 
