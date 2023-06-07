@@ -48,3 +48,41 @@ func AuthMiddleware() gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+
+func AuthMiddleware_admin() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		//获取authorization header
+		tokenString := ctx.GetHeader("Authorization")
+		//若token为空或token格式不正确
+		if tokenString == "" || len(tokenString) <= 7 || !strings.HasPrefix(tokenString, "Bearer ") {
+            ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足"})
+            return
+        }
+		tokenString = tokenString[7:]
+		token, claims_admin, err := common.ParseToken_admin(tokenString)
+		if err != nil || !token.Valid {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足"})
+			ctx.Abort()
+			return
+		}
+		//验证通过后获取claims中的userId
+		adminId := claims_admin.AdminID
+		if adminId == 0 {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足"})
+			ctx.Abort()
+			return
+		}
+		db := common.GetDB()
+		admin := model.Admin{}
+		db.Where("adminID = ?", adminId).First(&admin)
+		//用户不存在
+		if admin.AdminID == 0 {
+			// 如果用户不存在，则将user设置为nil，表示当前用户为游客。
+			ctx.Set("admin", nil)
+		} else {
+			// 用户存在，将user的信息写入上下文
+			ctx.Set("admin", admin)
+		}
+		ctx.Next()
+	}
+}

@@ -7,6 +7,8 @@ import (
 	"loginTest/model"
 	"loginTest/response"
 	"net/http"
+	"log"
+	"loginTest/dto"
 )
 
 type User struct {
@@ -37,6 +39,42 @@ type Check struct {
 	Name   string
 	Phone  string
 	IdPass int
+}
+
+// 登录
+func AdminLogin(ctx *gin.Context) {
+	db := common.DB
+	var requesrAdmin model.Admin
+	ctx.Bind(&requesrAdmin)
+
+	account := requesrAdmin.Account
+	password := requesrAdmin.Password
+
+	var admin model.Admin
+	db.Where("account = ?", account).First(&admin)
+	if admin.AdminID == 0 {
+		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "管理员账号不存在")
+		return
+	}
+	if password != admin.Password {
+		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "密码错误")
+		return
+	}
+	//发放token
+	token, err := common.ReleaseToken_admin(admin)
+	if err != nil {
+		response.Response(ctx, http.StatusInternalServerError, 400, nil, "系统异常")
+
+		log.Printf("token generate error: %v", err)
+		return
+	}
+	//返回结果
+	response.Success(ctx, gin.H{"token": token}, "登录成功")
+}
+
+func AdminInfo(c *gin.Context) {
+	admin, _ := c.Get("admin")
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": gin.H{"admin": dto.ToAdminDto(admin.(model.Admin))}})
 }
 
 // 输出所有用户
