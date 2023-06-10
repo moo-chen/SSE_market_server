@@ -9,6 +9,7 @@ import (
 	"loginTest/response"
 	"net/http"
 	"time"
+	"sort"
 	"unicode/utf8"
 )
 
@@ -77,6 +78,7 @@ func Post(c *gin.Context) {
 		Partition: partition,
 		Title:     title,
 		Ptext:     content,
+		BrowseNum: 0,
 		Heat:      0,
 		PostTime:  time.Now(),
 		Photos:    photos,
@@ -94,6 +96,8 @@ type PostResponse struct {
 	Content       string
 	Like          int
 	Comment       int
+	Browse        int
+	Heat          float64
 	PostTime      time.Time
 	IsSaved       bool
 	IsLiked       bool
@@ -151,6 +155,8 @@ func Browse(c *gin.Context) {
 			Content:       post.Ptext,
 			Like:          post.LikeNum,
 			Comment:       post.CommentNum,
+			Browse:        post.BrowseNum,
+			Heat:          post.Heat,
 			PostTime:      post.PostTime,
 			IsSaved:       isSaved,
 			IsLiked:       isLiked,
@@ -233,6 +239,26 @@ func UpdateLike(c *gin.Context) {
 	}
 }
 
+type BrowseMsg struct {
+	UserTelephone string
+	PostID        uint
+	// BrowseNum     int
+}
+
+func UpdateBrowseNum(c *gin.Context) {
+	db := common.GetDB()
+	var requestBrowseMsg BrowseMsg
+	c.Bind(&requestBrowseMsg)
+	userTelephone := requestBrowseMsg.UserTelephone
+	postID := requestBrowseMsg.PostID
+	// browseNum := requestBrowseMsg.BrowseNum 不用获取直接+1
+	var user model.User
+	db.Where("phone = ?", userTelephone).First(&user)
+	var post model.Post
+	db.Where("postID = ?", postID).First(&post)
+	db.Model(&post).Update("browse_num", post.BrowseNum+1)
+}
+
 type IDmsg struct {
 	PostID uint
 }
@@ -289,6 +315,8 @@ type PostDetailsResponse struct {
 	Content       string
 	Like          int
 	Comment       int
+	Browse        int
+	Heat          float64
 	PostTime      time.Time
 	IsSaved       bool
 	IsLiked       bool
@@ -336,10 +364,13 @@ func ShowDetails(c *gin.Context) {
 		PostTime:      post.PostTime,
 		IsSaved:       isSaved,
 		IsLiked:       isLiked,
+		Browse:        post.BrowseNum,
+		Heat:          post.Heat,
 		Photos:        post.Photos,
 	}
 	c.JSON(http.StatusOK, postDetailsResponse)
 }
+
 func UploadPhotos(c *gin.Context) {
 	//UserID := c.PostForm("UserID")
 	// 获取前端传过来 图片
@@ -497,3 +528,70 @@ func GetAllFeedback(c *gin.Context) {
 //
 //	response.Success(c, gin.H{"feedback": feedback}, "Feedback retrieved successfully")
 //}
+
+type HeatResponse struct {
+	PostID uint
+	Title  string
+	Heat   float64
+}
+
+type PostStats struct {
+	PostID     int
+	LikeNum    int
+	CommentNum int
+	BrowseNum  int
+	HeatValue  float64
+	Title      string
+}
+
+func CalculateHeat(c *gin.Context) {
+	// 获取所有帖子的 postID, likenum, commentnum, browsenum
+	db := common.GetDB()
+	// 从数据库中获取所有的帖子，并将结果存储在posts切片中。
+	var posts []model.Post
+	db.Find(&posts)
+	// 创建了一个postStats切片，用于存储所有帖子的统计信息。
+	var postStats []PostStats
+	// 通过遍历posts切片，我们逐个取出每个帖子的信息，然后创建一个新的PostStats结构体，
+	// 并将帖子的postID、likenum、commentnum和browsenum赋值给对应的字段。
+	for _, post := range posts {
+		var stats PostStats
+		stats.PostID = post.PostID
+		stats.LikeNum = post.LikeNum
+		stats.CommentNum = post.CommentNum
+		stats.BrowseNum = post.BrowseNum
+		stats.Title = post.Title
+		postStats = append(postStats, stats)
+	}
+	// postStats 列表中包含了所有帖子的 postID, likenum, commentnum, browsenum
+	// 定义权重
+	weightLike := 3
+	weightComment := 5
+	weightBrowse := 2
+	// 计算每个帖子的热度
+	for i := range postStats {
+		heatValue := float64(
+			postStats[i].LikeNum*weightLike +
+				postStats[i].CommentNum*weightComment +
+				postStats[i].BrowseNum*weightBrowse)
+		postStats[i].HeatValue = heatValue
+		// 更新post表的heat属性
+		db.Model(&model.Post{}).Where("postID = ?", postStats[i].PostID).Update("heat", heatValue)
+	}
+	// 对 postStats 切片按热度进行排序
+	sort.Slice(postStats, func(i, j int) bool {
+		return postStats[i].HeatValue > postStats[j].HeatValue
+	})
+	var heatResponsesTop10 []HeatResponse
+	// 只返回前10个帖子
+	for i := 0; i < 10 && i < len(postStats); i++ {
+		post := postStats[i]
+		heatResponse := HeatResponse{
+			PostID: uint(post.PostID),
+			Title:  post.Title,
+			Heat:   post.HeatValue,
+		}
+		heatResponsesTop10 = append(heatResponsesTop10, heatResponse)
+	}
+	c.JSON(http.StatusOK, heatResponsesTop10)
+}

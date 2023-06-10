@@ -14,6 +14,7 @@ type Post struct {
 	Ptext      string    `gorm:"column:ptext;type:varchar(5000)"`
 	CommentNum int       `gorm:"column:comment_num;type:int"`
 	LikeNum    int       `gorm:"column:like_num;type:int"`
+	BrowseNum  int		 `gorm:"column:browse_num;type:int"`
 	PostTime   time.Time `gorm:"column:post_time;type:datetime"`
 	Heat       float64   `gorm:"column:heat;type:double"`
 	Photos     string    `gorm:"column:photos;type:varchar(1000)"`
