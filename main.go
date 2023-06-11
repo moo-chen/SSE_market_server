@@ -4,6 +4,7 @@ import (
 	_ "github.com/alexbrainman/odbc"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+	"log"
 	"loginTest/common"
 	"net/http"
 	"os"
@@ -22,11 +23,24 @@ func main() {
 	r.StaticFS("/uploads", http.Dir("./public/uploads"))
 
 	CollectRoute(r)
-	port := viper.GetString("server.port")
-	if port != "" {
-		panic(r.Run(":" + port))
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: r,
 	}
-	panic(r.Run())
+
+	go func() {
+		if err := srv.ListenAndServeTLS("ssl/cert.crt", "ssl/cert.key"); err != nil {
+			log.Fatal("ListenAndServeTLS: ", err)
+		}
+	}()
+
+	log.Printf("Server started on port 8080")
+	select {}
+	//port := viper.GetString("server.port")
+	//if port != "" {
+	//	panic(r.Run(":" + port))
+	//}
+	//panic(r.Run())
 }
 
 // 使用viper从配置文件中读取配置

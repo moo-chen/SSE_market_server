@@ -296,8 +296,8 @@ type PostDetailsResponse struct {
 }
 
 type PostDetailsMsg struct {
-	UserTelephone string
-	PostID        uint
+	UserTelephone string `json:"userTelephone"`
+	PostID        uint   `json:"postID"`
 }
 
 func ShowDetails(c *gin.Context) {
@@ -308,6 +308,14 @@ func ShowDetails(c *gin.Context) {
 	postID := requestPostDetailsMsg.PostID
 	var temUser model.User
 	db.Where("phone = ?", userTelephone).First(&temUser)
+	if temUser.UserID == 0 {
+		response.Response(c, http.StatusNotFound, 404, nil, "无法解析当前用户")
+		return
+	}
+	if postID == 0 {
+		response.Response(c, http.StatusBadRequest, 404, nil, "接收到的postID为空")
+		return
+	}
 	isLiked := false
 	var like model.Plike
 	db.Where("userID = ? AND ptargetID = ?", temUser.UserID, postID).First(&like)
@@ -364,7 +372,7 @@ func UploadPhotos(c *gin.Context) {
 
 	// 更新 Post 的 Photos 字段
 	// 我们存储的是可以通过 HTTP 访问的 URL，而不是服务器本地的文件路径
-	fileURL := "http://localhost:8080/uploads/" + filename
+	fileURL := "https://localhost:8080/uploads/" + filename
 
 	// 返回成功
 	c.JSON(http.StatusOK, gin.H{"fileURL": fileURL, "message": "上传成功"})
@@ -420,7 +428,7 @@ func UploadZip(c *gin.Context) {
 
 	// 更新 Post 的 Photos 字段
 	// 我们存储的是可以通过 HTTP 访问的 URL，而不是服务器本地的文件路径
-	fileURL := "http://localhost:8080/uploads/" + filename
+	fileURL := "https://localhost:8080/uploads/" + filename
 
 	// 返回成功
 	c.JSON(http.StatusOK, gin.H{"zipURL": fileURL, "message": "上传成功"})
