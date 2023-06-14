@@ -1,4 +1,4 @@
-package someConst
+package util
 
 var (
 	ValidateTitle  = "校园集市验证邮件"

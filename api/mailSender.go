@@ -6,7 +6,7 @@ import (
 	"github.com/jordan-wright/email"
 	"log"
 	"loginTest/common"
-	"loginTest/someConst"
+	"loginTest/util"
 	"math/rand"
 	"net/smtp"
 	"strconv"
@@ -40,19 +40,19 @@ func saveVcode(vcode, receiver string) {
 
 func SendEmail(receiver string) error {
 	e := email.NewEmail()
-	senderString := someConst.ValidateSender
-	senderString = strings.Replace(senderString, "emailUsername", someConst.EmailUsername, -1)
+	senderString := util.ValidateSender
+	senderString = strings.Replace(senderString, "emailUsername", util.EmailUsername, -1)
 	e.From = senderString
 
 	e.To = []string{receiver}
-	e.Subject = someConst.ValidateTitle
-	text := someConst.ValidateText
+	e.Subject = util.ValidateTitle
+	text := util.ValidateText
 
 	text, vcode := formVcode(text)
 	saveVcode(vcode, receiver)
 	e.Text = []byte(text)
 
-	err := e.Send(someConst.Addr, smtp.PlainAuth("", someConst.EmailUsername, someConst.Password, someConst.Host))
+	err := e.Send(util.Addr, smtp.PlainAuth("", util.EmailUsername, util.Password, util.Host))
 	if err != nil {
 		log.Fatal(err)
 		return err

@@ -369,3 +369,131 @@ func UploadPhotos(c *gin.Context) {
 	// 返回成功
 	c.JSON(http.StatusOK, gin.H{"fileURL": fileURL, "message": "上传成功"})
 }
+
+func UploadZip(c *gin.Context) {
+	const maxUploadSize = 100 << 20 // 100 MB
+
+	// 获取前端传过来的文件
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "文件上传失败"})
+		return
+	}
+
+	if file.Size > maxUploadSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "文件太大，不能超过10MB"})
+		return
+	}
+
+	fileBytes, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法读取文件"})
+		return
+	}
+	defer fileBytes.Close()
+
+	buffer := make([]byte, 512)
+	_, err = fileBytes.Read(buffer)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法读取文件"})
+		return
+	}
+
+	if http.DetectContentType(buffer) != "application/zip" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "文件必须是zip格式"})
+		return
+	}
+
+	// 文件保存路径和文件名可以根据实际情况修改
+	// 文件名我们采用了当前时间戳和原始文件名的组合，以避免文件名冲突
+	// 时间戳采用 nanoseconds 级别，可以几乎确保每个文件名都是唯一的
+	timestamp := time.Now().UnixNano()
+	filename := fmt.Sprintf("%d_%s", timestamp, file.Filename)
+	filepath := "public/uploads/" + filename
+
+	// 保存文件到本地
+	err = c.SaveUploadedFile(file, filepath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "文件保存失败"})
+		return
+	}
+
+	// 更新 Post 的 Photos 字段
+	// 我们存储的是可以通过 HTTP 访问的 URL，而不是服务器本地的文件路径
+	fileURL := "http://localhost:8080/uploads/" + filename
+
+	// 返回成功
+	c.JSON(http.StatusOK, gin.H{"zipURL": fileURL, "message": "上传成功"})
+}
+
+func SubmitFeedback(c *gin.Context) {
+	db := common.GetDB()
+
+	// Create a struct to hold the incoming JSON body
+	var feedbackInput struct {
+		Ftext      string `json:"ftext"`
+		Attachment string `json:"attachment"`
+	}
+
+	// Bind the incoming JSON to the struct
+	if err := c.BindJSON(&feedbackInput); err != nil {
+		response.Response(c, http.StatusInternalServerError, 500, nil, "Invalid request body")
+		return
+	}
+
+	// Create a new feedback entry
+	feedback := model.Feedback{
+		Ftext:      feedbackInput.Ftext,
+		Attachment: feedbackInput.Attachment,
+	}
+
+	db.Create(&feedback)
+
+	if db.NewRecord(feedback) {
+		response.Response(c, http.StatusInternalServerError, 500, nil, "Failed to submit feedback")
+		return
+	}
+
+	// Convert to JSON and respond
+	response.Success(c, gin.H{
+		"feedbackID": feedback.FeedbackID,
+		"ftext":      feedback.Ftext,
+		"attachment": feedback.Attachment,
+	}, "Feedback submitted successfully")
+}
+
+func GetAllFeedback(c *gin.Context) {
+	db := common.GetDB()
+
+	var feedbacks []model.Feedback
+	db.Find(&feedbacks)
+
+	if len(feedbacks) == 0 {
+		response.Response(c, http.StatusNotFound, 404, nil, "No feedback found")
+		return
+	}
+
+	response.Success(c, gin.H{"feedbacks": feedbacks}, "Feedback retrieved successfully")
+}
+
+//func GetFeedback(c *gin.Context) {
+//	db := common.GetDB()
+//
+//	feedbackID, err := strconv.Atoi(c.PostForm("feedbackID"))
+//	if err != nil {
+//		response.Response(c, http.StatusBadRequest, 400, nil, "Invalid feedback ID")
+//		return
+//	}
+//
+//	var feedback model.Feedback
+//	if err := db.First(&feedback, feedbackID).Error; err != nil {
+//		if gorm.IsRecordNotFoundError(err) {
+//			response.Response(c, http.StatusNotFound, 404, nil, "Feedback not found")
+//		} else {
+//			response.Response(c, http.StatusInternalServerError, 500, nil, "Database error")
+//		}
+//		return
+//	}
+//
+//	response.Success(c, gin.H{"feedback": feedback}, "Feedback retrieved successfully")
+//}
