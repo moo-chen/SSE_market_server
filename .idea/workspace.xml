@@ -5,14 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3b8794e5-2662-4d3e-9407-c35629c6270c" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/_2023_05_27_13_51____.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/_2023_05_29_23_18____.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/shelf/_2023_05_29_23_18____.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/在进行更新之前于_2023_05_27_13_51_取消提交了变更_[变更]/shelved.patch" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/config/application.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/controller/postController.go" beforeDir="false" afterPath="$PROJECT_DIR$/controller/postController.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model/feedback.go" beforeDir="false" afterPath="$PROJECT_DIR$/model/feedback.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/routes.go" beforeDir="false" afterPath="$PROJECT_DIR$/routes.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/controller/manageController.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/controller/managerController.go" beforeDir="false" afterPath="$PROJECT_DIR$/controller/managerController.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,6 +33,9 @@
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="ProjectErrors" />
   </component>
   <component name="ProjectId" id="2PsYIhWwF8JRrkVdhv1ukMwJU7V" />
   <component name="ProjectLevelVcsManager">
@@ -101,6 +102,11 @@
       <framework value="gotest" />
       <method v="2" />
     </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Build.go build loginTest" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="应用程序级" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">

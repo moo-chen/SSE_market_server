@@ -3,12 +3,12 @@ package controller
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"log"
 	"loginTest/common"
+	"loginTest/dto"
 	"loginTest/model"
 	"loginTest/response"
 	"net/http"
-	"log"
-	"loginTest/dto"
 )
 
 type User struct {

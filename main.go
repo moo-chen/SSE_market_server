@@ -1,16 +1,47 @@
 package main
 
 import (
-	// _ "github.com/alexbrainman/odbc"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+	"log"
 	"loginTest/common"
 	"net/http"
 	"os"
+	"os/exec"
+	"time"
+
+	"github.com/robfig/cron/v3"
 )
+
+func copy() {
+	// 数据库连接信息
+	dbHost := "localhost"
+	dbPort := 3306
+	dbUser := "root"
+	dbPassword := "123456"
+	dbName := "sse_market"
+
+	// 备份目录
+	backupDir := "/Users/michael/Documents/backup"
+
+	c := cron.New()
+	c.AddFunc("@daily", func() {
+		backupFile := fmt.Sprintf("%s/backup_%s.sql", backupDir, time.Now().Format("2006-01-02 15:04:05"))
+		cmd := exec.Command("mysqldump", fmt.Sprintf("-h%s", dbHost), fmt.Sprintf("-P%d", dbPort), fmt.Sprintf("-u%s", dbUser), fmt.Sprintf("-p%s", dbPassword), dbName, "--result-file="+backupFile)
+		err := cmd.Run()
+		if err != nil {
+			log.Println("备份失败:", err)
+			return
+		}
+		log.Println("备份成功:", backupFile)
+	})
+	c.Start()
+}
 
 func main() {
 	InitConfig()
+	copy()
 	db := common.InitDB()
 	rds := common.RedisInit()
 	defer rds.Close()
