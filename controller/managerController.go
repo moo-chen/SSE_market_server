@@ -29,7 +29,7 @@ type Username struct {
 	Name string
 }
 
-type ModifyUser struct {
+type modifyUser struct {
 	Account   string
 	Password1 string
 	Password2 string
@@ -121,7 +121,7 @@ func PassUsers(ctx *gin.Context) {
 func AddAdmin(ctx *gin.Context) {
 	fmt.Println("Start to add")
 	db := common.DB
-	var newAdmin ModifyUser
+	var newAdmin modifyUser
 	ctx.Bind(&newAdmin)
 	account := newAdmin.Account
 	pass1 := newAdmin.Password1
@@ -166,7 +166,7 @@ func AddAdmin(ctx *gin.Context) {
 // 修改密码
 func ChangeAdminPassword(ctx *gin.Context) {
 	db := common.DB
-	var admin ModifyUser
+	var admin modifyUser
 	var newAdmin model.Admin
 
 	ctx.Bind(&admin)
