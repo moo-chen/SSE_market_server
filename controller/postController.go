@@ -249,6 +249,7 @@ func DeletePost(c *gin.Context) {
 
 type Reportmsg struct {
 	TargetID      uint
+	Targettype    string
 	UserTelephone string
 	Reason        string
 }
@@ -258,6 +259,7 @@ func SubmitReport(c *gin.Context) {
 	var reportmsg Reportmsg
 	c.Bind(&reportmsg)
 	TargetID := reportmsg.TargetID
+	Targettype := reportmsg.Targettype
 	userTelephone := reportmsg.UserTelephone
 	Reason := reportmsg.Reason
 	if len(Reason) == 0 {
@@ -267,7 +269,7 @@ func SubmitReport(c *gin.Context) {
 	var user model.User
 	db.Where("phone = ?", userTelephone).First(&user)
 	newSue := model.Sue{
-		Targettype: "post",
+		Targettype: Targettype,
 		TargetID:   int(TargetID),
 		UserID:     int(user.UserID),
 		User:       user,

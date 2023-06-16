@@ -31,6 +31,8 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	auth.POST("api/auth/updatePcommentLike", controller.UpdatePcommentLike)
 	auth.POST("/api/auth/updateSave", controller.UpdateSave)
 	auth.POST("/api/auth/deletePost", controller.DeletePost)
+	auth.POST("/api/auth/deletePcomment", controller.DeletePcomment)
+	auth.POST("/api/auth/deleteCcomment", controller.DeleteCcomment)
 	auth.POST("/api/auth/submitReport", controller.SubmitReport)
 	auth.GET("/api/auth/info", middleware.AuthMiddleware(), controller.Info)
 	noauth.POST("/api/auth/uploadphotos", controller.UploadPhotos)
@@ -54,5 +56,8 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	r.POST("/api/auth/showUsers", controller.ShowFilterUsers)
 	r.POST("/api/auth/adminLogin", controller.AdminLogin)
 	r.GET("/api/auth/admininfo", middleware.AuthMiddleware_admin(), controller.AdminInfo)
+	auth.GET("/api/auth/getSues", controller.GetSues)
+	auth.POST("/api/auth/noViolation", controller.NoViolation)
+	auth.POST("/api/auth/violation", controller.Violation)
 	return r
 }
