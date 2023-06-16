@@ -7,8 +7,10 @@ import (
 	"loginTest/common"
 	"loginTest/model"
 	"loginTest/response"
+	"math"
 	"net/http"
 	"time"
+	"sort"
 	"unicode/utf8"
 )
 
@@ -73,13 +75,16 @@ func Post(c *gin.Context) {
 	db.Where("phone = ?", userTelephone).First(&user)
 
 	newPost := model.Post{
-		UserID:    int(user.UserID),
-		Partition: partition,
-		Title:     title,
-		Ptext:     content,
-		Heat:      0,
-		PostTime:  time.Now(),
-		Photos:    photos,
+		UserID:     int(user.UserID),
+		Partition:  partition,
+		Title:      title,
+		Ptext:      content,
+		LikeNum:    0,
+		CommentNum: 0,
+		BrowseNum:  0,
+		Heat:       0,
+		PostTime:   time.Now(),
+		Photos:     photos,
 	}
 	db.Create(&newPost)
 	response.Response(c, http.StatusOK, 200, nil, "发帖成功")
@@ -94,6 +99,8 @@ type PostResponse struct {
 	Content       string
 	Like          int
 	Comment       int
+	Browse        int
+	Heat          float64
 	PostTime      time.Time
 	IsSaved       bool
 	IsLiked       bool
@@ -151,6 +158,8 @@ func Browse(c *gin.Context) {
 			Content:       post.Ptext,
 			Like:          post.LikeNum,
 			Comment:       post.CommentNum,
+			Browse:        post.BrowseNum,
+			Heat:          post.Heat,
 			PostTime:      post.PostTime,
 			IsSaved:       isSaved,
 			IsLiked:       isLiked,
@@ -215,22 +224,76 @@ func UpdateLike(c *gin.Context) {
 	var post model.Post
 	db.Where("postID = ?", postID).First(&post)
 	if isLiked {
-		db.Model(&post).Update("like_num", post.LikeNum-1)
+		// var liketime model.Plike
+		// var Time time.Time
+		// db.Where("time = ?", Time).First(&liketime)
 		var like model.Plike
 		db.Where("userID = ? AND ptargetID = ?", user.UserID, post.PostID).First(&like)
+		// fmt.Println("likeID ", like.PlikeID)
 		if like.PlikeID != 0 {
+			currentTime := time.Now()
+			fmt.Println("currentTime", currentTime)
+			fmt.Println("likeTime", like.Time)
+			timedif := currentTime.Sub(like.Time)
+			hours := timedif.Hours()
+			days := int(hours / 24)
+			fmt.Println("days ",days)
+			if days > 0 {
+				weightlikePower := math.Pow(0.5, float64(days))
+				weightLike := float64(3)
+				deleteHeat := math.Pow(weightLike, weightlikePower)
+				fmt.Println("deleteHeat ",deleteHeat)
+				db.Model(&post).Update("heat", post.Heat-deleteHeat)
+			} else {
+				weightLike := float64(3)
+				db.Model(&post).Update("heat", post.Heat-weightLike)
+			}
+			db.Model(&post).Update("like_num", post.LikeNum-1)
 			db.Delete(&like)
 		}
 	} else {
 		newLike := model.Plike{
 			UserID:    user.UserID,
 			PtargetID: post.PostID,
+			Time:      time.Now(),
 		}
 		if newLike.UserID != 0 && newLike.PtargetID != 0 {
 			db.Model(&post).Update("like_num", post.LikeNum+1)
+			// 在这里设置 点赞 的权重
+			weightLike := float64(3)
+			db.Model(&post).Update("heat", post.Heat+weightLike)
 			db.Create(&newLike)
 		}
 	}
+}
+
+type BrowseMsg struct {
+	UserTelephone string
+	PostID        uint
+	// BrowseNum     int
+}
+
+func UpdateBrowseNum(c *gin.Context) {
+	db := common.GetDB()
+	var requestBrowseMsg BrowseMsg
+	c.Bind(&requestBrowseMsg)
+	userTelephone := requestBrowseMsg.UserTelephone
+	postID := requestBrowseMsg.PostID
+	// browseNum := requestBrowseMsg.BrowseNum 不用获取直接+1
+	var user model.User
+	db.Where("phone = ?", userTelephone).First(&user)
+	var post model.Post
+	db.Where("postID = ?", postID).First(&post)
+	db.Model(&post).Update("browse_num", post.BrowseNum+1)
+	// 在这里设置 浏览 的权重
+	weightBrowse := float64(1)
+	db.Model(&post).Update("heat", post.Heat+weightBrowse)
+	newBrowse := model.Pbrowse{
+		UserID:    user.UserID,
+		PtargetID: post.PostID,
+		Time:      time.Now(),
+	}
+	db.Create(&newBrowse)
 }
 
 type IDmsg struct {
@@ -289,6 +352,8 @@ type PostDetailsResponse struct {
 	Content       string
 	Like          int
 	Comment       int
+	Browse        int
+	Heat          float64
 	PostTime      time.Time
 	IsSaved       bool
 	IsLiked       bool
@@ -336,10 +401,13 @@ func ShowDetails(c *gin.Context) {
 		PostTime:      post.PostTime,
 		IsSaved:       isSaved,
 		IsLiked:       isLiked,
+		Browse:        post.BrowseNum,
+		Heat:          post.Heat,
 		Photos:        post.Photos,
 	}
 	c.JSON(http.StatusOK, postDetailsResponse)
 }
+
 func UploadPhotos(c *gin.Context) {
 	//UserID := c.PostForm("UserID")
 	// 获取前端传过来 图片
@@ -497,3 +565,33 @@ func GetAllFeedback(c *gin.Context) {
 //
 //	response.Success(c, gin.H{"feedback": feedback}, "Feedback retrieved successfully")
 //}
+
+type HeatResponse struct {
+	PostID uint
+	Title  string
+	Heat   float64
+}
+
+func CalculateHeat(c *gin.Context) {
+	// 获取所有帖子的 postID, likenum, commentnum, browsenum
+	db := common.GetDB()
+	// 从数据库中获取所有的帖子，并将结果存储在posts切片中。
+	var posts []model.Post
+	db.Find(&posts)
+	// 对 postStats 切片按热度进行排序
+	sort.Slice(posts, func(i, j int) bool {
+		return posts[i].Heat > posts[j].Heat
+	})
+	var heatResponsesTop10 []HeatResponse
+	// 只返回前10个帖子
+	for i := 0; i < 10 && i < len(posts); i++ {
+		post := posts[i]
+		heatResponse := HeatResponse{
+			PostID: uint(post.PostID),
+			Title:  post.Title,
+			Heat:   post.Heat,
+		}
+		heatResponsesTop10 = append(heatResponsesTop10, heatResponse)
+	}
+	c.JSON(http.StatusOK, heatResponsesTop10)
+}

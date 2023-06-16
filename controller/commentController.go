@@ -1,13 +1,14 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
 	"loginTest/response"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CommentResponse struct {
@@ -165,6 +166,9 @@ func PostPcomment(c *gin.Context) {
 	var post model.Post
 	db.Where("postID = ?", msg.PostID).First(&post)
 	db.Model(&post).Update("comment_num", post.CommentNum+1)
+	// 在这里设置 评论 的权重
+	weightComment := float64(6)
+	db.Model(&post).Update("heat", post.Heat+weightComment)
 	comment := CommentResponse{
 		PcommentID:   pcomment.PcommentID,
 		Author:       user.Name,
@@ -265,6 +269,9 @@ func PostCcomment(c *gin.Context) {
 	var post model.Post
 	db.Where("postID = ?", msg.PostID).First(&post)
 	db.Model(&post).Update("comment_num", post.CommentNum+1)
+	// 在这里设置 评论 的权重
+	weightComment := float64(6)
+	db.Model(&post).Update("heat", post.Heat+weightComment)
 	response.Response(c, http.StatusOK, 200, nil, "评论成功！")
 }
 
