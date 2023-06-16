@@ -7,6 +7,7 @@ import (
 	"loginTest/common"
 	"loginTest/model"
 	"loginTest/response"
+	"math"
 	"net/http"
 	"time"
 	"sort"
@@ -74,14 +75,16 @@ func Post(c *gin.Context) {
 	db.Where("phone = ?", userTelephone).First(&user)
 
 	newPost := model.Post{
-		UserID:    int(user.UserID),
-		Partition: partition,
-		Title:     title,
-		Ptext:     content,
-		BrowseNum: 0,
-		Heat:      0,
-		PostTime:  time.Now(),
-		Photos:    photos,
+		UserID:     int(user.UserID),
+		Partition:  partition,
+		Title:      title,
+		Ptext:      content,
+		LikeNum:    0,
+		CommentNum: 0,
+		BrowseNum:  0,
+		Heat:       0,
+		PostTime:   time.Now(),
+		Photos:     photos,
 	}
 	db.Create(&newPost)
 	response.Response(c, http.StatusOK, 200, nil, "发帖成功")
@@ -221,19 +224,44 @@ func UpdateLike(c *gin.Context) {
 	var post model.Post
 	db.Where("postID = ?", postID).First(&post)
 	if isLiked {
-		db.Model(&post).Update("like_num", post.LikeNum-1)
+		// var liketime model.Plike
+		// var Time time.Time
+		// db.Where("time = ?", Time).First(&liketime)
 		var like model.Plike
 		db.Where("userID = ? AND ptargetID = ?", user.UserID, post.PostID).First(&like)
+		// fmt.Println("likeID ", like.PlikeID)
 		if like.PlikeID != 0 {
+			currentTime := time.Now()
+			fmt.Println("currentTime", currentTime)
+			fmt.Println("likeTime", like.Time)
+			timedif := currentTime.Sub(like.Time)
+			hours := timedif.Hours()
+			days := int(hours / 24)
+			fmt.Println("days ",days)
+			if days > 0 {
+				weightlikePower := math.Pow(0.5, float64(days))
+				weightLike := float64(3)
+				deleteHeat := math.Pow(weightLike, weightlikePower)
+				fmt.Println("deleteHeat ",deleteHeat)
+				db.Model(&post).Update("heat", post.Heat-deleteHeat)
+			} else {
+				weightLike := float64(3)
+				db.Model(&post).Update("heat", post.Heat-weightLike)
+			}
+			db.Model(&post).Update("like_num", post.LikeNum-1)
 			db.Delete(&like)
 		}
 	} else {
 		newLike := model.Plike{
 			UserID:    user.UserID,
 			PtargetID: post.PostID,
+			Time:      time.Now(),
 		}
 		if newLike.UserID != 0 && newLike.PtargetID != 0 {
 			db.Model(&post).Update("like_num", post.LikeNum+1)
+			// 在这里设置 点赞 的权重
+			weightLike := float64(3)
+			db.Model(&post).Update("heat", post.Heat+weightLike)
 			db.Create(&newLike)
 		}
 	}
@@ -257,6 +285,15 @@ func UpdateBrowseNum(c *gin.Context) {
 	var post model.Post
 	db.Where("postID = ?", postID).First(&post)
 	db.Model(&post).Update("browse_num", post.BrowseNum+1)
+	// 在这里设置 浏览 的权重
+	weightBrowse := float64(1)
+	db.Model(&post).Update("heat", post.Heat+weightBrowse)
+	newBrowse := model.Pbrowse{
+		UserID:    user.UserID,
+		PtargetID: post.PostID,
+		Time:      time.Now(),
+	}
+	db.Create(&newBrowse)
 }
 
 type IDmsg struct {
@@ -535,61 +572,24 @@ type HeatResponse struct {
 	Heat   float64
 }
 
-type PostStats struct {
-	PostID     int
-	LikeNum    int
-	CommentNum int
-	BrowseNum  int
-	HeatValue  float64
-	Title      string
-}
-
 func CalculateHeat(c *gin.Context) {
 	// 获取所有帖子的 postID, likenum, commentnum, browsenum
 	db := common.GetDB()
 	// 从数据库中获取所有的帖子，并将结果存储在posts切片中。
 	var posts []model.Post
 	db.Find(&posts)
-	// 创建了一个postStats切片，用于存储所有帖子的统计信息。
-	var postStats []PostStats
-	// 通过遍历posts切片，我们逐个取出每个帖子的信息，然后创建一个新的PostStats结构体，
-	// 并将帖子的postID、likenum、commentnum和browsenum赋值给对应的字段。
-	for _, post := range posts {
-		var stats PostStats
-		stats.PostID = post.PostID
-		stats.LikeNum = post.LikeNum
-		stats.CommentNum = post.CommentNum
-		stats.BrowseNum = post.BrowseNum
-		stats.Title = post.Title
-		postStats = append(postStats, stats)
-	}
-	// postStats 列表中包含了所有帖子的 postID, likenum, commentnum, browsenum
-	// 定义权重
-	weightLike := 3
-	weightComment := 5
-	weightBrowse := 2
-	// 计算每个帖子的热度
-	for i := range postStats {
-		heatValue := float64(
-			postStats[i].LikeNum*weightLike +
-				postStats[i].CommentNum*weightComment +
-				postStats[i].BrowseNum*weightBrowse)
-		postStats[i].HeatValue = heatValue
-		// 更新post表的heat属性
-		db.Model(&model.Post{}).Where("postID = ?", postStats[i].PostID).Update("heat", heatValue)
-	}
 	// 对 postStats 切片按热度进行排序
-	sort.Slice(postStats, func(i, j int) bool {
-		return postStats[i].HeatValue > postStats[j].HeatValue
+	sort.Slice(posts, func(i, j int) bool {
+		return posts[i].Heat > posts[j].Heat
 	})
 	var heatResponsesTop10 []HeatResponse
 	// 只返回前10个帖子
-	for i := 0; i < 10 && i < len(postStats); i++ {
-		post := postStats[i]
+	for i := 0; i < 10 && i < len(posts); i++ {
+		post := posts[i]
 		heatResponse := HeatResponse{
 			PostID: uint(post.PostID),
 			Title:  post.Title,
-			Heat:   post.HeatValue,
+			Heat:   post.Heat,
 		}
 		heatResponsesTop10 = append(heatResponsesTop10, heatResponse)
 	}
