@@ -41,6 +41,7 @@ func InitDB() *gorm.DB {
 	db.AutoMigrate(&model.Pclike{})
 	db.AutoMigrate(&model.Pcomment{})
 	db.AutoMigrate(&model.Ccomment{})
+	db.AutoMigrate(&model.Pbrowse{})
 	db.AutoMigrate(&model.Admin{})
 	db.AutoMigrate(&model.Feedback{})
 	db.AutoMigrate(&model.Notice{})
