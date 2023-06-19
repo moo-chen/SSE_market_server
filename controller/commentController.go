@@ -1,38 +1,42 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
 	"loginTest/response"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CommentResponse struct {
-	PcommentID   int
-	Author       string
-	AuthorAvatar string
-	CommentTime  time.Time
-	Content      string
-	LikeNum      int
-	SubComments  []Subcomment
-	IsLiked      bool
+	PcommentID      int
+	Author          string
+	AuthorTelephone string
+	AuthorAvatar    string
+	CommentTime     time.Time
+	Content         string
+	LikeNum         int
+	SubComments     []Subcomment
+	IsLiked         bool
 }
 type Commentsmsg struct {
 	UserTelephone string `json:"userTelephone"`
 	PostID        int    `json:"postID"`
 }
 type Subcomment struct {
-	CcommentID     int       `json:"ccommentID"`
-	Author         string    `json:"author"`
-	AuthorAvatar   string    `json:"authorAvatar"`
-	CommentTime    time.Time `json:"commentTime"`
-	Content        string    `json:"content"`
-	LikeNum        int       `json:"likeNum"`
-	IsLiked        bool      `json:"isLiked"`
-	UserTargetName string    `json:"userTargetName"`
+	CcommentID      int       `json:"ccommentID"`
+	Author          string    `json:"author"`
+	AuthorTelephone string    `json:"authorTelephone"`
+	AuthorAvatar    string    `json:"authorAvatar"`
+	CommentTime     time.Time `json:"commentTime"`
+	Content         string    `json:"content"`
+	LikeNum         int       `json:"likeNum"`
+	IsLiked         bool      `json:"isLiked"`
+	UserTargetName  string    `json:"userTargetName"`
+	ShowMenu        bool      `json:"showMenu"`
 }
 
 // GetComments 给前端返回对应帖子的评论以及每条帖子评论的评论
@@ -62,19 +66,49 @@ func GetComments(c *gin.Context) {
 		var commentuser model.User
 		db.Where("userID = ?", pcomment.UserID).First(&commentuser)
 		comment := CommentResponse{
-			PcommentID:   pcomment.PcommentID,
-			Author:       commentuser.Name,
-			AuthorAvatar: commentuser.AvatarURL,
-			CommentTime:  pcomment.Time,
-			Content:      pcomment.Pctext,
-			LikeNum:      pcomment.LikeNum,
-			SubComments:  GetSubComments(pcomment, temUser.UserID),
-			IsLiked:      isLike,
+			PcommentID:      pcomment.PcommentID,
+			Author:          commentuser.Name,
+			AuthorTelephone: commentuser.Phone,
+			AuthorAvatar:    commentuser.AvatarURL,
+			CommentTime:     pcomment.Time,
+			Content:         pcomment.Pctext,
+			LikeNum:         pcomment.LikeNum,
+			SubComments:     GetSubComments(pcomment, temUser.UserID),
+			IsLiked:         isLike,
 		}
 		comments = append(comments, comment)
 	}
 	c.JSON(http.StatusOK, comments)
 }
+
+type IDmesg struct {
+	PcommentID uint
+}
+
+func DeletePcomment(c *gin.Context) {
+	db := common.GetDB()
+	var ID IDmesg
+	c.Bind(&ID)
+	PcommentID := ID.PcommentID
+	var pcomment model.Pcomment
+	db.Where("pcommentID = ?", PcommentID).First(&pcomment)
+	db.Delete(&pcomment)
+}
+
+type IDmesag struct {
+	CcommentID uint
+}
+
+func DeleteCcomment(c *gin.Context) {
+	db := common.GetDB()
+	var ID IDmesag
+	c.Bind(&ID)
+	CcommentID := ID.CcommentID
+	var ccomment model.Ccomment
+	db.Where("ccommentID = ?", CcommentID).First(&ccomment)
+	db.Delete(&ccomment)
+}
+
 
 // GetSubComments 返回pcomment帖子的评论对应的子评论列表
 func GetSubComments(pcomment model.Pcomment, userID int) []Subcomment {
@@ -92,14 +126,16 @@ func GetSubComments(pcomment model.Pcomment, userID int) []Subcomment {
 		var commentuser model.User
 		db.Where("userID =?", ccomment.UserID).First(&commentuser)
 		comment := Subcomment{
-			CcommentID:     ccomment.CcommentID,
-			Author:         commentuser.Name,
-			AuthorAvatar:   commentuser.AvatarURL,
-			CommentTime:    ccomment.Time,
-			Content:        ccomment.Cctext,
-			LikeNum:        ccomment.LikeNum,
-			IsLiked:        isLike,
-			UserTargetName: ccomment.UserTargetName,
+			CcommentID:      ccomment.CcommentID,
+			Author:          commentuser.Name,
+			AuthorTelephone: commentuser.Phone,
+			AuthorAvatar:    commentuser.AvatarURL,
+			CommentTime:     ccomment.Time,
+			Content:         ccomment.Cctext,
+			LikeNum:         ccomment.LikeNum,
+			IsLiked:         isLike,
+			UserTargetName:  ccomment.UserTargetName,
+			ShowMenu:        false,
 		}
 		subcomments = append(subcomments, comment)
 	}
@@ -165,6 +201,9 @@ func PostPcomment(c *gin.Context) {
 	var post model.Post
 	db.Where("postID = ?", msg.PostID).First(&post)
 	db.Model(&post).Update("comment_num", post.CommentNum+1)
+	// 在这里设置 评论 的权重
+	weightComment := float64(6)
+	db.Model(&post).Update("heat", post.Heat+weightComment)
 	comment := CommentResponse{
 		PcommentID:   pcomment.PcommentID,
 		Author:       user.Name,
@@ -265,6 +304,9 @@ func PostCcomment(c *gin.Context) {
 	var post model.Post
 	db.Where("postID = ?", msg.PostID).First(&post)
 	db.Model(&post).Update("comment_num", post.CommentNum+1)
+	// 在这里设置 评论 的权重
+	weightComment := float64(6)
+	db.Model(&post).Update("heat", post.Heat+weightComment)
 	response.Response(c, http.StatusOK, 200, nil, "评论成功！")
 }
 

@@ -13,3 +13,4 @@ datasource:
   #密码
   password: '123456'
   charset: utf8mb4
+

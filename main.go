@@ -55,12 +55,23 @@ func main() {
 	// 文件服务器获取文件的位置在 "./public" 文件夹下。
 	r.StaticFS("/uploads", http.Dir("./public/uploads"))
 
-	route.CollectRoute(r)
-	fmt.Println()
-	fmt.Println(r)
-	port := viper.GetString("server.port")
-	if port != "" {
-		panic(r.Run(":" + port))
+	CollectRoute(r)
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: r,
 	}
-	panic(r.Run())
+
+	go func() {
+		if err := srv.ListenAndServeTLS("ssl/cert.crt", "ssl/cert.key"); err != nil {
+			log.Fatal("ListenAndServeTLS: ", err)
+		}
+	}()
+
+	log.Printf("Server started on port 8080")
+	select {}
+	//port := viper.GetString("server.port")
+	//if port != "" {
+	//	panic(r.Run(":" + port))
+	//}
+	//panic(r.Run())
 }
