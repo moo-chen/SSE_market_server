@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 	"github.com/spf13/viper"
 	"log"
 	"loginTest/common"
@@ -11,19 +12,15 @@ import (
 	"net/http"
 	"os/exec"
 	"time"
-
-	"github.com/robfig/cron/v3"
 )
 
-var r *gin.Engine
-
-func copy() {
+func Copy() {
 	// 数据库连接信息
-	dbHost := "localhost"
-	dbPort := 3306
-	dbUser := "root"
-	dbPassword := "123456"
-	dbName := "sse_market"
+	dbHost := viper.GetString("datasource.host")
+	dbPort := viper.GetInt("datasource.port")
+	dbUser := viper.GetString("datasource.username")
+	dbPassword := viper.GetString("datasource.password")
+	dbName := viper.GetString("datasource.database")
 
 	// 备份目录
 	backupDir := "/Users/michael/Documents/backup"
@@ -42,9 +39,11 @@ func copy() {
 	c.Start()
 }
 
+var r *gin.Engine
+
 func main() {
 	config.InitConfig()
-	copy()
+	Copy()
 	db := common.InitDB()
 	rds := common.RedisInit()
 	defer rds.Close()
@@ -55,7 +54,7 @@ func main() {
 	// 文件服务器获取文件的位置在 "./public" 文件夹下。
 	r.StaticFS("/uploads", http.Dir("./public/uploads"))
 
-	CollectRoute(r)
+	route.CollectRoute(r)
 	srv := &http.Server{
 		Addr:    ":8080",
 		Handler: r,

@@ -11,6 +11,7 @@ func InitConfig() {
 	wordDir, _ := os.Getwd()
 	viper.SetConfigName("application")
 	viper.SetConfigType("yml")
+	viper.AddConfigPath("config")
 	wordDir = strings.TrimRight(wordDir, "/test")
 	viper.AddConfigPath(wordDir + "/config")
 	err := viper.ReadInConfig()

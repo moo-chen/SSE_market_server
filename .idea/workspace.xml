@@ -4,6 +4,7 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
+    <list default="true" id="3b8794e5-2662-4d3e-9407-c35629c6270c" name="Changes" comment="单元测试modify password" />
     <list default="true" id="7d87bc01-6743-41ff-9359-f16faa2687d0" name="变更" comment="完善了通知页面，现在可以接受帖子评论、评论的回复、惩罚、反馈、举报处理的通知，并且对于帖子评论、评论的回复的通知点击通知响应位置会自动跳转到相应的位置(返回按钮也搞好了）。后端通知发送的逻辑错误也修复了，现在收到评论的回复有两种情况：一是其他人在我的帖子的评论下回复，二是其他人回复了我的二级评论。这两种情况不可同时发生，或者说同时发生也只收到一条通知。&#10;在侧边栏显示未读通知数量，数量为0则不显示，每次跳转路由的时候都会计算一次通知的数量。主页帖子显示头像和图片，帖子详情页也显示作者头像。由于举报和反馈还要基于其他人的一些工作，所有还没完善，但显示的框架已经搭建好了">
       <change afterPath="$PROJECT_DIR$/public/uploads/1685374565208582400_微信图片_20211027125601.jpg" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/public/uploads/1685375190721376400_微信图片_20211027125601.jpg" afterDir="false" />
@@ -232,3 +233,4 @@
     <settings-migrated>true</settings-migrated>
   </component>
 </project>
+
