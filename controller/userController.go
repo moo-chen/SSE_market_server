@@ -60,7 +60,7 @@ type identity struct {
 	ValiCode string `gorm:"type:varchar(10);not null"`
 }
 
-type modifyUser struct {
+type ModifyUser struct {
 	Phone     string `gorm:"type:varchar(11);not null"`
 	Password  string `gorm:"size:255;not null"`
 	Password2 string `gorm:"size:255;not null"`
@@ -151,8 +151,10 @@ func Register(c *gin.Context) {
 		return
 	}
 	numInt, err := strconv.Atoi(num)
+	fmt.Println(num, numInt)
 	if err != nil {
 		response.Response(c, http.StatusInternalServerError, 400, nil, "学号异常")
+		return
 	}
 	if isNumExist(db, numInt) {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "该学号已存在")
@@ -286,14 +288,14 @@ func Login(c *gin.Context) {
 func ModifyPassword(c *gin.Context) {
 	db := common.GetDB()
 	var user model.User
-	var inputUser modifyUser
+	var inputUser ModifyUser
 	c.Bind(&inputUser)
 	phone := inputUser.Phone
 	password := inputUser.Password
 	password2 := inputUser.Password2
-	//fmt.Println(phone)
-	//fmt.Println(password)
-	//fmt.Println(password2)
+	fmt.Println(phone)
+	fmt.Println(password)
+	fmt.Println(password2)
 	if password != password2 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "密码输入不一致")
 		return
