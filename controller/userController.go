@@ -71,6 +71,26 @@ type requestEmail struct {
 	Mode  int
 }
 
+func DeleteMe(c *gin.Context) {
+	db := common.GetDB()
+
+	var requestUser = registerUser{}
+	c.Bind(&requestUser)
+	name := requestUser.Name
+
+	fmt.Println("name = ", name)
+
+	var checkUser model.User
+	db.Where("name = ?", name).First(&checkUser)
+	if checkUser.UserID == 0 {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "未找到该用户")
+		return
+	}
+
+	db.Delete(&checkUser)
+	response.Response(c, http.StatusOK, 200, nil, "成功删除该用户")
+}
+
 func Register(c *gin.Context) {
 	// 连接数据库
 	db := common.GetDB()
