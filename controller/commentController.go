@@ -7,6 +7,8 @@ import (
 	"loginTest/response"
 	"net/http"
 	"time"
+	"math"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -92,6 +94,23 @@ func DeletePcomment(c *gin.Context) {
 	PcommentID := ID.PcommentID
 	var pcomment model.Pcomment
 	db.Where("pcommentID = ?", PcommentID).First(&pcomment)
+	// 剪掉相应的热度
+	currentTime := time.Now()
+	timedif := currentTime.Sub(pcomment.Time)
+	hours := timedif.Hours()
+	days := int(hours / 24)
+	fmt.Println("days: ", days)
+	weightComment := float64(6)
+	var post model.Post
+	db.Where("postID = ?", pcomment.PtargetID).First(&post)
+	if days > 0 {
+		weightCommentPower := math.Pow(0.5, float64(days))
+		deleteHeat := math.Pow(weightComment, weightCommentPower)
+		db.Model(&post).Update("heat", post.Heat-deleteHeat)
+	} else {
+		db.Model(&post).Update("heat", post.Heat-weightComment)
+	}
+	//
 	db.Delete(&pcomment)
 }
 
@@ -106,6 +125,25 @@ func DeleteCcomment(c *gin.Context) {
 	CcommentID := ID.CcommentID
 	var ccomment model.Ccomment
 	db.Where("ccommentID = ?", CcommentID).First(&ccomment)
+	// 剪掉相应的热度
+	currentTime := time.Now()
+	timedif := currentTime.Sub(ccomment.Time)
+	hours := timedif.Hours()
+	days := int(hours / 24)
+	fmt.Println("days: ", days)
+	weightComment := float64(6)
+	var targetcommentid model.Pcomment
+	db.Where("pcommentID= ?", ccomment.CtargetID).First(&targetcommentid)
+	var post model.Post
+	db.Where("postID = ?", targetcommentid.PtargetID).First(&post)
+	if days > 0 {
+		weightCommentPower := math.Pow(0.5, float64(days))
+		deleteHeat := math.Pow(weightComment, weightCommentPower)
+		db.Model(&post).Update("heat", post.Heat-deleteHeat)
+	} else {
+		db.Model(&post).Update("heat", post.Heat-weightComment)
+	}
+	//
 	db.Delete(&ccomment)
 }
 
