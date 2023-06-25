@@ -76,18 +76,33 @@ func DeleteMe(c *gin.Context) {
 
 	var requestUser = registerUser{}
 	c.Bind(&requestUser)
-	name := requestUser.Name
+	phone := requestUser.Phone
+	email := requestUser.Email
 
-	fmt.Println("name = ", name)
+	fmt.Println("phone = ", phone)
+	fmt.Println("email = ", email)
 
 	var checkUser model.User
-	db.Where("name = ?", name).First(&checkUser)
-	if checkUser.UserID == 0 {
+	db.Where("phone = ?", phone).First(&checkUser)
+	userID := checkUser.UserID
+
+	if checkUser.Email != email {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "请用注册时使用的email完成注销")
+		return
+	}
+	if userID == 0 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "未找到该用户")
 		return
 	}
 
-	db.Delete(&checkUser)
+	checkUser.Name = "用户已注销"
+	checkUser.Phone = "0"
+	checkUser.Num = 0
+	checkUser.Email = ""
+	checkUser.AvatarURL = ""
+
+	db.Save(&checkUser)
+
 	response.Response(c, http.StatusOK, 200, nil, "成功删除该用户")
 }
 
