@@ -6,6 +6,7 @@ import (
 	"loginTest/model"
 	"net/http"
 	"time"
+	"math"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,10 +38,44 @@ func GetSues(c *gin.Context) {
 			var pcomment model.Pcomment
 			db.Where("pcommentID = ?", sue.TargetID).First(&pcomment)
 			Targetdetail = pcomment.Pctext
+			// 剪掉相应的热度
+			currentTime := time.Now()
+			timedif := currentTime.Sub(pcomment.Time)
+			hours := timedif.Hours()
+			days := int(hours / 24)
+			weightComment := float64(6)
+			var post model.Post
+			db.Where("postID = ?", pcomment.PtargetID).First(&post)
+			if days > 0 {
+				weightCommentPower := math.Pow(0.5, float64(days))
+				deleteHeat := math.Pow(weightComment, weightCommentPower)
+				db.Model(&post).Update("heat", post.Heat-deleteHeat)
+			} else {
+				db.Model(&post).Update("heat", post.Heat-weightComment)
+			}
+			//
 		} else if sue.Targettype == "ccomment" {
 			var ccomment model.Ccomment
 			db.Where("ccommentID = ?", sue.TargetID).First(&ccomment)
 			Targetdetail = ccomment.Cctext
+			// 剪掉相应的热度
+			currentTime := time.Now()
+			timedif := currentTime.Sub(ccomment.Time)
+			hours := timedif.Hours()
+			days := int(hours / 24)
+			weightComment := float64(6)
+			var targetcommentid model.Pcomment
+			db.Where("pcommentID= ?", ccomment.CtargetID).First(&targetcommentid)
+			var post model.Post
+			db.Where("postID = ?", targetcommentid.PtargetID).First(&post)
+			if days > 0 {
+				weightCommentPower := math.Pow(0.5, float64(days))
+				deleteHeat := math.Pow(weightComment, weightCommentPower)
+				db.Model(&post).Update("heat", post.Heat-deleteHeat)
+			} else {
+				db.Model(&post).Update("heat", post.Heat-weightComment)
+			}
+			//
 		}
 		suere := SueResponse{
 			SueID:        sue.SueID,
