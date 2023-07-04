@@ -17,8 +17,8 @@ func GetSuggestion(inStr string) string {
 	// 代码泄露可能会导致 SecretId 和 SecretKey 泄露，并威胁账号下所有资源的安全性。以下代码示例仅供参考，建议采用更安全的方式来使用密钥，请参见：https://cloud.tencent.com/document/product/1278/85305
 	// 密钥可前往官网控制台 https://console.cloud.tencent.com/cam/capi 进行获取
 	credential := common.NewCredential(
-		"AKID020qZCh2FJFZmrsphSOI5lKm4EHG6pRw",
-		"9BKew8GIPROG3iGlCat6FMNHbr26365x",
+		"AKIDV6d3NafeWGtPn2CG6h2Sp0GI5cuxlLfk",
+		"14ykTApocDgwzqY6SaUGpAIHftvlXAf0",
 	)
 	// 实例化一个client选项，可选的，没有特殊需求可以跳过
 	cpf := profile.NewClientProfile()
