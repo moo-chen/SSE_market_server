@@ -1,16 +1,17 @@
 package controller
 
 import (
+	"fmt"
 	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
 	"loginTest/response"
+	"math"
 	"net/http"
 	"time"
-	"math"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 type CommentResponse struct {
@@ -103,6 +104,11 @@ func DeletePcomment(c *gin.Context) {
 	weightComment := float64(6)
 	var post model.Post
 	db.Where("postID = ?", pcomment.PtargetID).First(&post)
+	// 帖子评论数减相应数字
+	var ccomment model.Ccomment
+	var count int64
+	db.Model(&ccomment).Where("ctargetID = ?", pcomment.PcommentID).Count(&count)
+	db.Model(&post).UpdateColumn("comment_num", gorm.Expr("comment_num - ?", count+1))
 	if days > 0 {
 		weightCommentPower := math.Pow(0.5, float64(days))
 		deleteHeat := math.Pow(weightComment, weightCommentPower)
@@ -136,6 +142,8 @@ func DeleteCcomment(c *gin.Context) {
 	db.Where("pcommentID= ?", ccomment.CtargetID).First(&targetcommentid)
 	var post model.Post
 	db.Where("postID = ?", targetcommentid.PtargetID).First(&post)
+	// 帖子评论数减一
+	db.Model(&post).UpdateColumn("comment_num", gorm.Expr("comment_num - ?", 1))
 	if days > 0 {
 		weightCommentPower := math.Pow(0.5, float64(days))
 		deleteHeat := math.Pow(weightComment, weightCommentPower)
@@ -146,7 +154,6 @@ func DeleteCcomment(c *gin.Context) {
 	//
 	db.Delete(&ccomment)
 }
-
 
 // GetSubComments 返回pcomment帖子的评论对应的子评论列表
 func GetSubComments(pcomment model.Pcomment, userID int) []Subcomment {
