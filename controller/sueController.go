@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"loginTest/common"
 	"loginTest/model"
+	"math"
 	"net/http"
 	"time"
-	"math"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 type SueResponse struct {
@@ -144,6 +145,13 @@ func Violation(c *gin.Context) {
 			content = string([]rune(pcomment.Pctext)[:30])
 		}
 		db.Where("userID = ?", pcomment.UserID).First(&targetuser)
+		// 帖子评论数减相应数字
+		var post model.Post
+		db.Where("postID = ?", pcomment.PtargetID).First(&post)
+		var ccomment model.Ccomment
+		var count int64
+		db.Model(&ccomment).Where("ctargetID = ?", pcomment.PcommentID).Count(&count)
+		db.Model(&post).UpdateColumn("comment_num", gorm.Expr("comment_num - ?", count+1))
 		db.Delete(&pcomment)
 	} else if sue.Targettype == "ccomment" {
 		suetype = "评论"
@@ -155,6 +163,12 @@ func Violation(c *gin.Context) {
 			content = string([]rune(ccomment.Cctext)[:30])
 		}
 		db.Where("userID = ?", ccomment.UserID).First(&targetuser)
+		// 帖子评论数减一
+		var targetcommentid model.Pcomment
+		db.Where("pcommentID= ?", ccomment.CtargetID).First(&targetcommentid)
+		var post model.Post
+		db.Where("postID = ?", targetcommentid.PtargetID).First(&post)
+		db.Model(&post).UpdateColumn("comment_num", gorm.Expr("comment_num - ?", 1))
 		db.Delete(&ccomment)
 	}
 
