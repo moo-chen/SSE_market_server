@@ -20,6 +20,7 @@ func GetSuggestion(inStr string) string {
 		"AKIDV6d3NafeWGtPn2CG6h2Sp0GI5cuxlLfk",
 		"14ykTApocDgwzqY6SaUGpAIHftvlXAf0",
 	)
+	
 	// 实例化一个client选项，可选的，没有特殊需求可以跳过
 	cpf := profile.NewClientProfile()
 	cpf.HttpProfile.Endpoint = "tms.tencentcloudapi.com"
