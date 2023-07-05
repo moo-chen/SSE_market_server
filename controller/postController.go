@@ -9,8 +9,8 @@ import (
 	"loginTest/response"
 	"math"
 	"net/http"
-	"time"
 	"sort"
+	"time"
 	"unicode/utf8"
 )
 
@@ -237,12 +237,12 @@ func UpdateLike(c *gin.Context) {
 			timedif := currentTime.Sub(like.Time)
 			hours := timedif.Hours()
 			days := int(hours / 24)
-			fmt.Println("days ",days)
+			fmt.Println("days ", days)
 			if days > 0 {
 				weightlikePower := math.Pow(0.5, float64(days))
 				weightLike := float64(3)
 				deleteHeat := math.Pow(weightLike, weightlikePower)
-				fmt.Println("deleteHeat ",deleteHeat)
+				fmt.Println("deleteHeat ", deleteHeat)
 				db.Model(&post).Update("heat", post.Heat-deleteHeat)
 			} else {
 				weightLike := float64(3)
@@ -449,7 +449,7 @@ func UploadPhotos(c *gin.Context) {
 }
 
 func UploadZip(c *gin.Context) {
-	const maxUploadSize = 100 << 20 // 100 MB
+	const maxUploadSize = 10 << 20 // 10 MB
 
 	// 获取前端传过来的文件
 	file, err := c.FormFile("file")
