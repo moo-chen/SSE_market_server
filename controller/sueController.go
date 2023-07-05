@@ -39,44 +39,10 @@ func GetSues(c *gin.Context) {
 			var pcomment model.Pcomment
 			db.Where("pcommentID = ?", sue.TargetID).First(&pcomment)
 			Targetdetail = pcomment.Pctext
-			// 剪掉相应的热度
-			currentTime := time.Now()
-			timedif := currentTime.Sub(pcomment.Time)
-			hours := timedif.Hours()
-			days := int(hours / 24)
-			weightComment := float64(6)
-			var post model.Post
-			db.Where("postID = ?", pcomment.PtargetID).First(&post)
-			if days > 0 {
-				weightCommentPower := math.Pow(0.5, float64(days))
-				deleteHeat := math.Pow(weightComment, weightCommentPower)
-				db.Model(&post).Update("heat", post.Heat-deleteHeat)
-			} else {
-				db.Model(&post).Update("heat", post.Heat-weightComment)
-			}
-			//
 		} else if sue.Targettype == "ccomment" {
 			var ccomment model.Ccomment
 			db.Where("ccommentID = ?", sue.TargetID).First(&ccomment)
 			Targetdetail = ccomment.Cctext
-			// 剪掉相应的热度
-			currentTime := time.Now()
-			timedif := currentTime.Sub(ccomment.Time)
-			hours := timedif.Hours()
-			days := int(hours / 24)
-			weightComment := float64(6)
-			var targetcommentid model.Pcomment
-			db.Where("pcommentID= ?", ccomment.CtargetID).First(&targetcommentid)
-			var post model.Post
-			db.Where("postID = ?", targetcommentid.PtargetID).First(&post)
-			if days > 0 {
-				weightCommentPower := math.Pow(0.5, float64(days))
-				deleteHeat := math.Pow(weightComment, weightCommentPower)
-				db.Model(&post).Update("heat", post.Heat-deleteHeat)
-			} else {
-				db.Model(&post).Update("heat", post.Heat-weightComment)
-			}
-			//
 		}
 		suere := SueResponse{
 			SueID:        sue.SueID,
@@ -144,14 +110,30 @@ func Violation(c *gin.Context) {
 		} else {
 			content = string([]rune(pcomment.Pctext)[:30])
 		}
+		var post model.Post
 		db.Where("userID = ?", pcomment.UserID).First(&targetuser)
 		// 帖子评论数减相应数字
-		var post model.Post
 		db.Where("postID = ?", pcomment.PtargetID).First(&post)
 		var ccomment model.Ccomment
 		var count int64
 		db.Model(&ccomment).Where("ctargetID = ?", pcomment.PcommentID).Count(&count)
 		db.Model(&post).UpdateColumn("comment_num", gorm.Expr("comment_num - ?", count+1))
+		// 剪掉相应的热度
+		currentTime := time.Now()
+		timedif := currentTime.Sub(pcomment.Time)
+		hours := timedif.Hours()
+		days := int(hours / 24)
+		weightComment := float64(6)
+		db.Where("postID = ?", pcomment.PtargetID).First(&post)
+		if days > 0 {
+			weightCommentPower := math.Pow(0.5, float64(days))
+			deleteHeat := math.Pow(weightComment, weightCommentPower)
+			db.Model(&post).Update("heat", post.Heat-(deleteHeat+float64(count)))
+		} else {
+			deleteCcommentHeat := float64(count * int64(weightComment))
+			db.Model(&post).Update("heat", post.Heat - (weightComment + deleteCcommentHeat))
+		}
+		//
 		db.Delete(&pcomment)
 	} else if sue.Targettype == "ccomment" {
 		suetype = "评论"
@@ -162,11 +144,27 @@ func Violation(c *gin.Context) {
 		} else {
 			content = string([]rune(ccomment.Cctext)[:30])
 		}
-		db.Where("userID = ?", ccomment.UserID).First(&targetuser)
-		// 帖子评论数减一
+		// 剪掉相应的热度
+		currentTime := time.Now()
+		timedif := currentTime.Sub(ccomment.Time)
+		hours := timedif.Hours()
+		days := int(hours / 24)
+		weightComment := float64(6)
 		var targetcommentid model.Pcomment
 		db.Where("pcommentID= ?", ccomment.CtargetID).First(&targetcommentid)
 		var post model.Post
+		db.Where("postID = ?", targetcommentid.PtargetID).First(&post)
+		if days > 0 {
+			weightCommentPower := math.Pow(0.5, float64(days))
+			deleteHeat := math.Pow(weightComment, weightCommentPower)
+			db.Model(&post).Update("heat", post.Heat-deleteHeat)
+		} else {
+			db.Model(&post).Update("heat", post.Heat-weightComment)
+		}
+		//
+		db.Where("userID = ?", ccomment.UserID).First(&targetuser)
+		// 帖子评论数减一
+		db.Where("pcommentID= ?", ccomment.CtargetID).First(&targetcommentid)
 		db.Where("postID = ?", targetcommentid.PtargetID).First(&post)
 		db.Model(&post).UpdateColumn("comment_num", gorm.Expr("comment_num - ?", 1))
 		db.Delete(&ccomment)
