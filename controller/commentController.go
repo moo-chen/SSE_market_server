@@ -112,9 +112,10 @@ func DeletePcomment(c *gin.Context) {
 	if days > 0 {
 		weightCommentPower := math.Pow(0.5, float64(days))
 		deleteHeat := math.Pow(weightComment, weightCommentPower)
-		db.Model(&post).Update("heat", post.Heat-deleteHeat)
+		db.Model(&post).Update("heat", post.Heat - (deleteHeat + float64(count)))
 	} else {
-		db.Model(&post).Update("heat", post.Heat-weightComment)
+		deleteCcommentHeat := float64(count * int64(weightComment))
+		db.Model(&post).Update("heat", post.Heat - (weightComment + deleteCcommentHeat))
 	}
 	//
 	db.Delete(&pcomment)
