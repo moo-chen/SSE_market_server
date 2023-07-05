@@ -8,8 +8,8 @@ datasource:
   host: 127.0.0.1
   port: 3306
   #数据库名称
-  database: ssemarket_latest
+  database: ssemarket
   username: root
   #密码
-  password: 123456
+  password: moochen0613
   charset: utf8mb4
