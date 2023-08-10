@@ -39,6 +39,7 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	auth.GET("/api/auth/info", middleware.AuthMiddleware(), controller.Info)
 	noauth.POST("/api/auth/uploadphotos", controller.UploadPhotos)
 	noauth.POST("/api/auth/uploadavatar", controller.UploadAvatar)
+	noauth.POST("/api/auth/updateavatar", controller.UpdateAvatar)
 	auth.POST("/api/auth/getavatar", controller.GetAvatar)
 	auth.POST("/api/auth/getInfo", controller.GetInfo)
 	auth.POST("/api/auth/updateUserInfo", controller.UpdateUserInfo)
