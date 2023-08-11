@@ -57,7 +57,6 @@ func GetNotice(c *gin.Context) {
 	var total int
 	var unreadTotal int
 	// requireID==0说明是首次查询,返回pagesize条通知,计算totalNum
-	// 算法过程，当前端发现目前返回的通知总数已经（大于）等于未读通知数，就会把read参数置为1
 	if requireID == 0 {
 		db.Model(&model.Notice{}).Where("receiver =?", user.UserID).Count(&total)
 		db.Model(&model.Notice{}).Where("receiver =? AND `read` =?", user.UserID, read).Count(&unreadTotal)
