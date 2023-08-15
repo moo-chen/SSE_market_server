@@ -14,7 +14,9 @@ import (
 	"loginTest/response"
 	"loginTest/util"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -56,7 +58,7 @@ type registerUser struct {
 }
 
 type identity struct {
-	Email    string `gorm:"type:varchar(11);not null"`
+	Email    string `gorm:"type:varchar(50);not null"`
 	ValiCode string `gorm:"type:varchar(10);not null"`
 }
 
@@ -67,7 +69,7 @@ type ModifyUser struct {
 }
 
 type requestEmail struct {
-	Email string `gorm:"type:varchar(11);not null"`
+	Email string `gorm:"type:varchar(50);not null"`
 	Mode  int
 }
 
@@ -160,6 +162,13 @@ func Register(c *gin.Context) {
 			check = true
 		}
 	}
+
+	arr := strings.Split(email, "@")
+	if arr[1] != "mail2.sysu.edu.cn" && arr[1] != "mail.sysu.edu.cn" {
+		response.Response(c, http.StatusBadRequest, 400, nil, "请使用中大邮箱！")
+		return
+	}
+
 	if !check {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "邮箱不符合要求")
 		return
@@ -239,6 +248,14 @@ func IdentityValidate(c *gin.Context) {
 			check = true
 		}
 	}
+
+	arr := strings.Split(email, "@")
+	fmt.Println(arr[1])
+	if arr[1] != "mail2.sysu.edu.cn" && arr[1] != "mail.sysu.edu.cn" {
+		response.Response(c, http.StatusBadRequest, 400, nil, "请使用中大邮箱！")
+		return
+	}
+
 	if !check {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "邮箱不符合要求")
 		return
@@ -362,8 +379,19 @@ func ValidateEmail(c *gin.Context) {
 	c.Bind(&request)
 	email := request.Email
 	mode := request.Mode
+	fmt.Println("email = ", email)
+	fmt.Println("mode = ", mode)
+
+	arr := strings.Split(email, "@")
+	//fmt.Println(arr[1])
+	if arr[1] != "mail2.sysu.edu.cn" && arr[1] != "mail.sysu.edu.cn" {
+		response.Response(c, http.StatusBadRequest, 400, gin.H{"data": email, "mode": mode}, "请使用中大邮箱！")
+		return
+	}
+
 	db := common.DB
 	if mode == 1 && !isEmailExist(db, email) {
+		//fmt.Println(1)
 		response.Response(c, http.StatusBadRequest, 400, gin.H{"data": email, "mode": mode}, "该邮箱未注册，请先完成注册操作")
 		return
 	}
@@ -377,6 +405,7 @@ func ValidateEmail(c *gin.Context) {
 	}
 	err := api.SendEmail(email)
 	if err != nil {
+		//fmt.Println(2)
 		response.Response(c, http.StatusBadRequest, 400, gin.H{"data": email}, "发送邮箱错误")
 		return
 	}
@@ -415,6 +444,56 @@ func UploadAvatar(c *gin.Context) {
 	db.Save(&user)
 
 	// 返回成功
+	response.Success(c, gin.H{"phone": user.Phone, "avatar_url": user.AvatarURL}, "上传成功")
+}
+
+func UpdateAvatar(c *gin.Context) {
+	// 用于移动端
+	phone := c.PostForm("phone")
+	fmt.Println(phone)
+	fmt.Println(len(phone))
+	if len(phone) != 11 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "Invalid phone number")
+		return
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		response.Response(c, http.StatusInternalServerError, 500, nil, "文件上传失败")
+		return
+	}
+
+	// Add a check for the file extension
+	ext := filepath.Ext(file.Filename)
+	if ext != ".png" && ext != ".jpg" && ext != ".jpeg" { // Add more formats if needed
+		response.Response(c, http.StatusBadRequest, 400, nil, "Invalid file format")
+		return
+	}
+
+	db := common.GetDB()
+	var user model.User
+
+	if db.Where("phone = ?", phone).First(&user).RecordNotFound() {
+		response.Response(c, http.StatusNotFound, 404, nil, "User not found")
+		return
+	}
+
+	timestamp := time.Now().UnixNano()
+	filename := fmt.Sprintf("%d_%s", timestamp, filepath.Base(file.Filename)) // Use base to avoid path traversal
+	filepath := "public/uploads/" + filename
+
+	err = c.SaveUploadedFile(file, filepath)
+	if err != nil {
+		response.Response(c, http.StatusInternalServerError, 500, nil, "文件保存失败")
+		return
+	}
+
+	user.AvatarURL = "https://localhost:8080/uploads/" + filename
+	if err := db.Save(&user).Error; err != nil {
+		response.Response(c, http.StatusInternalServerError, 500, nil, "Database update failed")
+		return
+	}
+
 	response.Success(c, gin.H{"phone": user.Phone, "avatar_url": user.AvatarURL}, "上传成功")
 }
 

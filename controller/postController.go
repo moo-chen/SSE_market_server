@@ -523,6 +523,8 @@ func SubmitFeedback(c *gin.Context) {
 	feedback := model.Feedback{
 		Ftext:      feedbackInput.Ftext,
 		Attachment: feedbackInput.Attachment,
+		Time:       time.Now(),
+		Status:     "wait",
 	}
 
 	db.Create(&feedback)
@@ -550,7 +552,10 @@ func GetAllFeedback(c *gin.Context) {
 		response.Response(c, http.StatusNotFound, 404, nil, "No feedback found")
 		return
 	}
-
+	// 对feedbacks按照时间进行排序
+	sort.Slice(feedbacks, func(i, j int) bool {
+		return feedbacks[j].Time.Before(feedbacks[i].Time)
+	})
 	response.Success(c, gin.H{"feedbacks": feedbacks}, "Feedback retrieved successfully")
 }
 
