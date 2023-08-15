@@ -2,7 +2,7 @@ package controller
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
+
 	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
@@ -10,8 +10,11 @@ import (
 	"math"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PostMsg struct {
@@ -20,6 +23,7 @@ type PostMsg struct {
 	Content       string
 	Partition     string
 	Photos        string
+	TagList       string
 }
 
 func Post(c *gin.Context) {
@@ -32,6 +36,9 @@ func Post(c *gin.Context) {
 	content := requestPostMsg.Content
 	partition := requestPostMsg.Partition
 	photos := requestPostMsg.Photos
+	tagList := requestPostMsg.TagList
+	tags := strings.Split(tagList, "|")
+	tagString := strings.Join(tags, ",")
 	// 验证数据
 	if len(userTelephone) == 0 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "返回的手机号为空")
@@ -85,6 +92,7 @@ func Post(c *gin.Context) {
 		Heat:       0,
 		PostTime:   time.Now(),
 		Photos:     photos,
+		Tag:        tagString,
 	}
 	db.Create(&newPost)
 	response.Response(c, http.StatusOK, 200, nil, "发帖成功")
@@ -105,6 +113,7 @@ type PostResponse struct {
 	IsSaved       bool
 	IsLiked       bool
 	Photos        string
+	Tag           string
 }
 
 type BrowseMeg struct {
@@ -128,7 +137,7 @@ func Browse(c *gin.Context) {
 		if len(searchinfo) == 0 {
 			db.Find(&posts)
 		} else {
-			db.Where("title LIKE ? OR ptext LIKE ?", "%"+searchinfo+"%", "%"+searchinfo+"%").Find(&posts)
+			db.Where("title LIKE ? OR ptext LIKE ? OR tag LIKE ?", "%"+searchinfo+"%", "%"+searchinfo+"%", "%"+searchinfo+"%").Find(&posts)
 		}
 	} else {
 		db.Find(&posts, "`partition` = ?", partition)
@@ -164,6 +173,7 @@ func Browse(c *gin.Context) {
 			IsSaved:       isSaved,
 			IsLiked:       isLiked,
 			Photos:        post.Photos,
+			Tag:           post.Tag,
 		}
 		postResponses = append(postResponses, postResponse)
 	}
@@ -360,6 +370,7 @@ type PostDetailsResponse struct {
 	IsSaved       bool
 	IsLiked       bool
 	Photos        string
+	Tag           string
 }
 
 type PostDetailsMsg struct {
@@ -414,6 +425,7 @@ func ShowDetails(c *gin.Context) {
 		Browse:        post.BrowseNum,
 		Heat:          post.Heat,
 		Photos:        post.Photos,
+		Tag:           post.Tag,
 	}
 	c.JSON(http.StatusOK, postDetailsResponse)
 }
