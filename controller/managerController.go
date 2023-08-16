@@ -5,10 +5,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"loginTest/common"
+	"loginTest/api"
 	"loginTest/dto"
 	"loginTest/model"
 	"loginTest/response"
 	"net/http"
+	"strings"
+	"time"
+	"unicode/utf8"
 )
 
 type User struct {
@@ -228,4 +232,70 @@ func DeleteAdmin(ctx *gin.Context) {
 
 	db.Delete(&checkUser)
 	response.Success(ctx, nil, "成功删除该管理员")
+}
+
+
+func AdminPost(c *gin.Context) {
+	db := common.GetDB()
+	var requestPostMsg PostMsg
+	c.Bind(&requestPostMsg)
+	// 获取参数
+	userTelephone := requestPostMsg.UserTelephone
+	title := requestPostMsg.Title
+	content := requestPostMsg.Content
+	partition := requestPostMsg.Partition
+	photos := requestPostMsg.Photos
+	tagList := requestPostMsg.TagList
+	tags := strings.Split(tagList, "|")
+	tagString := strings.Join(tags, ",")
+	// 验证数据
+	if len(userTelephone) == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "返回的手机号为空")
+		return
+	}
+	if len(title) == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "标题不能为空")
+		return
+	}
+
+	if utf8.RuneCountInString(title) > 15 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "标题最多为15个字")
+		return
+	}
+
+	if len(content) == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "内容不能为空")
+		return
+	}
+
+	if utf8.RuneCountInString(title) > 5000 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "内容最多为5000个字")
+		return
+	}
+
+	if len(partition) == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "分区不能为空")
+		return
+	}
+
+	if api.GetSuggestion(title) == "Block" || api.GetSuggestion(content) == "Block" {
+		response.Response(c, http.StatusBadRequest, 400, nil, "标题或内容含有不良信息,请重新编辑")
+		return
+	}
+
+	newPost := model.Post{
+		UserID:     0,
+		Partition:  partition,
+		Title:      title,
+		Ptext:      content,
+		LikeNum:    0,
+		CommentNum: 0,
+		BrowseNum:  0,
+		Heat:       0,
+		PostTime:   time.Now(),
+		Photos:     photos,
+		Tag:        tagString,
+	}
+	db.Create(&newPost)
+	response.Response(c, http.StatusOK, 200, nil, "发帖成功")
 }

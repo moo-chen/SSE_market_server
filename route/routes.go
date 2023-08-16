@@ -67,5 +67,6 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	adminAuth.GET("/api/auth/getSues", controller.GetSues)
 	adminAuth.POST("/api/auth/noViolation", controller.NoViolation)
 	adminAuth.POST("/api/auth/violation", controller.Violation)
+	adminAuth.POST("/api/auth/adminPost", controller.AdminPost)
 	return r
 }
