@@ -3,7 +3,6 @@ package controller
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
 	"loginTest/response"
@@ -66,10 +65,10 @@ func Post(c *gin.Context) {
 		return
 	}
 
-	if api.GetSuggestion(title) == "Block" || api.GetSuggestion(content) == "Block" {
-		response.Response(c, http.StatusBadRequest, 400, nil, "标题或内容含有不良信息,请重新编辑")
-		return
-	}
+	//if api.GetSuggestion(title) == "Block" || api.GetSuggestion(content) == "Block" {
+	//	response.Response(c, http.StatusBadRequest, 400, nil, "标题或内容含有不良信息,请重新编辑")
+	//	return
+	//}
 
 	var user model.User
 	db.Where("phone = ?", userTelephone).First(&user)
@@ -111,6 +110,9 @@ type BrowseMeg struct {
 	UserTelephone string
 	Partition     string
 	Searchinfo    string
+	Searchsort    string //用于分表查询 分为home,history,save三种
+	Limit         int
+	Offset        int
 }
 
 func Browse(c *gin.Context) {
@@ -121,53 +123,150 @@ func Browse(c *gin.Context) {
 	userTelephone := requestBrowseMeg.UserTelephone
 	partition := requestBrowseMeg.Partition
 	searchinfo := requestBrowseMeg.Searchinfo
+	searchsort := requestBrowseMeg.Searchsort
+	limit := requestBrowseMeg.Limit
+	offset := requestBrowseMeg.Offset
+	fmt.Println(userTelephone, partition, searchinfo)
+	fmt.Println(limit, offset)
+	// 查询用户
 	var temUser model.User
 	db.Where("phone = ?", userTelephone).First(&temUser)
+	// posts是查询的原数据,postResponses是post基础上添加了用户点赞和删除的信息
 	var posts []model.Post
-	if partition == "主页" || len(partition) == 0 {
-		if len(searchinfo) == 0 {
-			db.Find(&posts)
-		} else {
-			db.Where("title LIKE ? OR ptext LIKE ?", "%"+searchinfo+"%", "%"+searchinfo+"%").Find(&posts)
+	var postResponses []PostResponse
+	// 如果是收藏"save"查询,首先查询psave,再查询post
+	if searchsort == "save" {
+		// saves是用户的收藏列表
+		var saves []model.Psave
+		db.Order("psaveID DESC").Offset(offset).Limit(limit).Where("userID = ?", temUser.UserID).Find(&saves)
+		for _, save := range saves {
+			var post model.Post
+			db.Where("postID = ?", save.PtargetID).First(&post)
+			posts = append(posts, post)
+		}
+		// 对每个帖子查询是否点赞
+		for _, post := range posts {
+			isLiked := false
+			var like model.Plike
+			db.Where("userID = ? AND ptargetID = ?", temUser.UserID, post.PostID).First(&like)
+			if like.PlikeID != 0 {
+				isLiked = true
+			}
+			var user model.User
+			db.Where("userID = ?", post.UserID).First(&user)
+			postResponse := PostResponse{
+				PostID:        uint(post.PostID),
+				UserName:      user.Name,
+				UserTelephone: user.Phone,
+				UserAvatar:    user.AvatarURL,
+				Title:         post.Title,
+				Content:       post.Ptext,
+				Like:          post.LikeNum,
+				Comment:       post.CommentNum,
+				Browse:        post.BrowseNum,
+				Heat:          post.Heat,
+				PostTime:      post.PostTime,
+				IsSaved:       true,
+				IsLiked:       isLiked,
+				Photos:        post.Photos,
+			}
+			postResponses = append(postResponses, postResponse)
 		}
 	} else {
-		db.Find(&posts, "`partition` = ?", partition)
-	}
-	var postResponses []PostResponse
-	for _, post := range posts {
-		isSaved := false
-		var save model.Psave
-		db.Where("userID = ? AND ptargetID = ?", temUser.UserID, post.PostID).First(&save)
-		if save.PsaveID != 0 {
-			isSaved = true
+		// "home"和"history"查询
+		if searchsort == "home" {
+			if partition == "主页" || len(partition) == 0 {
+				if len(searchinfo) == 0 {
+					db.Offset(offset).Limit(limit).Find(&posts)
+				} else {
+					db.Offset(offset).Limit(limit).Where("title LIKE ? OR ptext LIKE ?", "%"+searchinfo+"%", "%"+searchinfo+"%").Find(&posts)
+				}
+			} else {
+				db.Offset(offset).Limit(limit).Find(&posts, "`partition` = ?", partition)
+			}
+		} else if searchsort == "history" {
+			// historys是用户的历史记录列表
+			var historys []model.Pbrowse
+			db.Order("pbrowseID DESC").Offset(offset).Limit(limit).Where("userID = ?", temUser.UserID).Find(&historys)
+			for _, history := range historys {
+				var post model.Post
+				db.Where("postID = ?", history.PtargetID).First(&post)
+				posts = append(posts, post)
+			}
 		}
-		isLiked := false
-		var like model.Plike
-		db.Where("userID = ? AND ptargetID = ?", temUser.UserID, post.PostID).First(&like)
-		if like.PlikeID != 0 {
-			isLiked = true
+		// 对每个帖子查询是否点赞和收藏
+		for _, post := range posts {
+			isSaved := false
+			var save model.Psave
+			db.Where("userID = ? AND ptargetID = ?", temUser.UserID, post.PostID).First(&save)
+			if save.PsaveID != 0 {
+				isSaved = true
+			}
+			isLiked := false
+			var like model.Plike
+			db.Where("userID = ? AND ptargetID = ?", temUser.UserID, post.PostID).First(&like)
+			if like.PlikeID != 0 {
+				isLiked = true
+			}
+			var user model.User
+			db.Where("userID = ?", post.UserID).First(&user)
+			postResponse := PostResponse{
+				PostID:        uint(post.PostID),
+				UserName:      user.Name,
+				UserTelephone: user.Phone,
+				UserAvatar:    user.AvatarURL,
+				Title:         post.Title,
+				Content:       post.Ptext,
+				Like:          post.LikeNum,
+				Comment:       post.CommentNum,
+				Browse:        post.BrowseNum,
+				Heat:          post.Heat,
+				PostTime:      post.PostTime,
+				IsSaved:       isSaved,
+				IsLiked:       isLiked,
+				Photos:        post.Photos,
+			}
+			postResponses = append(postResponses, postResponse)
 		}
-		var user model.User
-		db.Where("userID = ?", post.UserID).First(&user)
-		postResponse := PostResponse{
-			PostID:        uint(post.PostID),
-			UserName:      user.Name,
-			UserTelephone: user.Phone,
-			UserAvatar:    user.AvatarURL,
-			Title:         post.Title,
-			Content:       post.Ptext,
-			Like:          post.LikeNum,
-			Comment:       post.CommentNum,
-			Browse:        post.BrowseNum,
-			Heat:          post.Heat,
-			PostTime:      post.PostTime,
-			IsSaved:       isSaved,
-			IsLiked:       isLiked,
-			Photos:        post.Photos,
-		}
-		postResponses = append(postResponses, postResponse)
 	}
 	c.JSON(http.StatusOK, postResponses)
+}
+
+func GetPostNum(c *gin.Context) {
+	db := common.GetDB()
+	// 获取参数
+	var requestBrowseMeg BrowseMeg
+	c.Bind(&requestBrowseMeg)
+	userTelephone := requestBrowseMeg.UserTelephone
+	partition := requestBrowseMeg.Partition
+	searchinfo := requestBrowseMeg.Searchinfo
+	searchsort := requestBrowseMeg.Searchsort
+	var count int
+	// 下面的searchsort分为home,save,history三类
+	if searchsort == "home" {
+		if partition == "主页" || len(partition) == 0 {
+			if len(searchinfo) == 0 {
+				db.Model(&model.Post{}).Count(&count)
+			} else {
+				db.Model(&model.Post{}).Where("title LIKE ? OR ptext LIKE ?", "%"+searchinfo+"%", "%"+searchinfo+"%").Count(&count)
+			}
+		} else {
+			db.Model(&model.Post{}).Where("`partition` = ?", partition).Count(&count)
+		}
+	} else {
+		// 查询用户
+		var user model.User
+		db.Where("phone = ?", userTelephone).First(&user)
+		if searchsort == "save" {
+			db.Model(&model.Psave{}).Where("userID = ?", user.UserID).Count(&count)
+		} else if searchsort == "history" {
+			db.Model(&model.Pbrowse{}).Where("userID = ?", user.UserID).Count(&count)
+		}
+	}
+	// 将结果返回给客户端
+	c.JSON(http.StatusOK, gin.H{
+		"Postcount": count,
+	})
 }
 
 type SaveMsg struct {
