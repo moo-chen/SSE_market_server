@@ -22,7 +22,6 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	auth.POST("/api/auth/apiTest", api.ApiTest)
 	auth.POST("/api/auth/post", controller.Post)
 	auth.POST("/api/auth/browse", controller.Browse)
-	auth.POST("/api/auth/getPostNum", controller.GetPostNum)
 	auth.POST("/api/auth/deleteMe", controller.DeleteMe)
 	auth.POST("/api/auth/updateLike", controller.UpdateLike)
 	auth.POST("/api/auth/showDetails", controller.ShowDetails)
