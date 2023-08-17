@@ -38,10 +38,10 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	auth.POST("/api/auth/deleteCcomment", controller.DeleteCcomment)
 	auth.POST("/api/auth/submitReport", controller.SubmitReport)
 	auth.GET("/api/auth/info", middleware.AuthMiddleware(), controller.Info)
-	noauth.POST("/api/auth/uploadphotos", controller.UploadPhotos)
-	noauth.POST("/api/auth/uploadavatar", controller.UploadAvatar)
-	noauth.POST("/api/auth/updateavatar", controller.UpdateAvatar)
-	auth.POST("/api/auth/getavatar", controller.GetAvatar)
+	noauth.POST("/api/auth/uploadPhotos", controller.UploadPhotos)
+	noauth.POST("/api/auth/uploadAvatar", controller.UploadAvatar)
+	noauth.POST("/api/auth/updateAvatar", controller.UpdateAvatar)
+	auth.POST("/api/auth/getAvatar", controller.GetAvatar)
 	auth.POST("/api/auth/getInfo", controller.GetInfo)
 	auth.POST("/api/auth/updateUserInfo", controller.UpdateUserInfo)
 	noauth.POST("/api/auth/uploadZip", controller.UploadZip)
@@ -68,5 +68,6 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	adminAuth.GET("/api/auth/getSues", controller.GetSues)
 	adminAuth.POST("/api/auth/noViolation", controller.NoViolation)
 	adminAuth.POST("/api/auth/violation", controller.Violation)
+	adminAuth.POST("/api/auth/adminPost", controller.AdminPost)
 	return r
 }

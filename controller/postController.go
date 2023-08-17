@@ -3,14 +3,19 @@ package controller
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+
+	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
 	"loginTest/response"
 	"math"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PostMsg struct {
@@ -19,6 +24,7 @@ type PostMsg struct {
 	Content       string
 	Partition     string
 	Photos        string
+	TagList       string
 }
 
 func Post(c *gin.Context) {
@@ -31,6 +37,9 @@ func Post(c *gin.Context) {
 	content := requestPostMsg.Content
 	partition := requestPostMsg.Partition
 	photos := requestPostMsg.Photos
+	tagList := requestPostMsg.TagList
+	tags := strings.Split(tagList, "|")
+	tagString := strings.Join(tags, ",")
 	// 验证数据
 	if len(userTelephone) == 0 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "返回的手机号为空")
@@ -65,10 +74,10 @@ func Post(c *gin.Context) {
 		return
 	}
 
-	//if api.GetSuggestion(title) == "Block" || api.GetSuggestion(content) == "Block" {
-	//	response.Response(c, http.StatusBadRequest, 400, nil, "标题或内容含有不良信息,请重新编辑")
-	//	return
-	//}
+	if api.GetSuggestion(title) == "Block" || api.GetSuggestion(content) == "Block" {
+		response.Response(c, http.StatusBadRequest, 400, nil, "标题或内容含有不良信息,请重新编辑")
+		return
+	}
 
 	var user model.User
 	db.Where("phone = ?", userTelephone).First(&user)
@@ -84,6 +93,7 @@ func Post(c *gin.Context) {
 		Heat:       0,
 		PostTime:   time.Now(),
 		Photos:     photos,
+		Tag:        tagString,
 	}
 	db.Create(&newPost)
 	response.Response(c, http.StatusOK, 200, nil, "发帖成功")
@@ -104,6 +114,7 @@ type PostResponse struct {
 	IsSaved       bool
 	IsLiked       bool
 	Photos        string
+	Tag           string
 }
 
 type BrowseMeg struct {
@@ -459,6 +470,7 @@ type PostDetailsResponse struct {
 	IsSaved       bool
 	IsLiked       bool
 	Photos        string
+	Tag           string
 }
 
 type PostDetailsMsg struct {
@@ -497,7 +509,12 @@ func ShowDetails(c *gin.Context) {
 	var post model.Post
 	db.Where("postID = ?", postID).First(&post)
 	var user model.User
-	db.Where("userID = ?", post.UserID).First(&user)
+	if(post.UserID == 0) {
+		user.Name = "管理员"
+		user.Phone = "11111111111"
+	}else {
+		db.Where("userID = ?", post.UserID).First(&user)
+	}
 	postDetailsResponse := PostDetailsResponse{
 		PostID:        uint(post.PostID),
 		UserName:      user.Name,
@@ -513,6 +530,7 @@ func ShowDetails(c *gin.Context) {
 		Browse:        post.BrowseNum,
 		Heat:          post.Heat,
 		Photos:        post.Photos,
+		Tag:           post.Tag,
 	}
 	c.JSON(http.StatusOK, postDetailsResponse)
 }
