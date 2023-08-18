@@ -161,7 +161,12 @@ func Browse(c *gin.Context) {
 				isLiked = true
 			}
 			var user model.User
-			db.Where("userID = ?", post.UserID).First(&user)
+			if post.UserID == 0 {
+				user.Name = "管理员"
+				user.Phone = "11111111111"
+			} else {
+				db.Where("userID = ?", post.UserID).First(&user)
+			}
 			postResponse := PostResponse{
 				PostID:        uint(post.PostID),
 				UserName:      user.Name,
@@ -217,7 +222,12 @@ func Browse(c *gin.Context) {
 				isLiked = true
 			}
 			var user model.User
-			db.Where("userID = ?", post.UserID).First(&user)
+			if post.UserID == 0 {
+				user.Name = "管理员"
+				user.Phone = "11111111111"
+			} else {
+				db.Where("userID = ?", post.UserID).First(&user)
+			}
 			postResponse := PostResponse{
 				PostID:        uint(post.PostID),
 				UserName:      user.Name,
