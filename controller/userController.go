@@ -282,27 +282,38 @@ func IdentityValidate(c *gin.Context) {
 
 type loginuser struct {
 	gorm.Model
-	Name     string `gorm:"type:varchar(20);not null"`
-	Phone    string `gorm:"type:varchar(11);not null"`
+	Name string `gorm:"type:varchar(20);not null"`
+	//Phone    string `gorm:"type:varchar(11);not null"`
+	Email    string `json:"email"`
 	Password string `gorm:"size:255;not null"`
 }
 
 func Login(c *gin.Context) {
+	// 邮箱登录
 	db := common.GetDB()
 	var requestUser = loginuser{}
 	c.Bind(&requestUser)
 	//获取参数
-	telephone := requestUser.Phone
+	//telephone := requestUser.Phone
+	email := requestUser.Email
 	password := requestUser.Password
 	//数据验证
-	if len(telephone) == 0 {
-		msg := "手机号为空！" + telephone
-		response.Response(c, http.StatusUnprocessableEntity, 400, nil, msg)
+	//if len(telephone) == 0 {
+	//	msg := "手机号为空！" + telephone
+	//	response.Response(c, http.StatusUnprocessableEntity, 400, nil, msg)
+	//	return
+	//}
+	//if len(telephone) != 11 {
+	//	msg := "手机号必须为11位" + telephone
+	//	response.Response(c, http.StatusUnprocessableEntity, 400, nil, msg)
+	//	return
+	//}
+	if len(email) == 0 {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "邮箱号为空！"+email)
 		return
 	}
-	if len(telephone) != 11 {
-		msg := "手机号必须为11位" + telephone
-		response.Response(c, http.StatusUnprocessableEntity, 400, nil, msg)
+	if !(strings.HasSuffix(email, "@mail.sysu.edu.cn") || strings.HasSuffix(email, "@mail2.sysu.edu.cn")) {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "请输入正确的中大邮箱")
 		return
 	}
 	if len(password) < 6 {
@@ -311,7 +322,8 @@ func Login(c *gin.Context) {
 	}
 	//判断手机号是否存在
 	var user model.User
-	db.Where("phone = ?", telephone).First(&user)
+	//db.Where("phone = ?", telephone).First(&user)
+	db.Where("email = ?", email).First(&user)
 	if user.UserID == 0 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "用户不存在")
 		return
