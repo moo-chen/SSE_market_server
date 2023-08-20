@@ -139,8 +139,8 @@ func GetNoticeNum(c *gin.Context) {
 	var noticeNum NoticeNumResponse
 	var readNum int
 	var unreadNum int
-	db.Model(&model.Notice{}).Where("receiver =? AND read =0", user.UserID).Count(&unreadNum)
-	db.Model(&model.Notice{}).Where("receiver =? AND read =1", user.UserID).Count(&readNum)
+	db.Model(&model.Notice{}).Where("receiver =? AND `read` =0", user.UserID).Count(&unreadNum)
+	db.Model(&model.Notice{}).Where("receiver =? AND `read` =1", user.UserID).Count(&readNum)
 	noticeNum.TotalNum = readNum + unreadNum
 	noticeNum.ReadTotalNum = readNum
 	noticeNum.UnreadTotalNum = unreadNum
