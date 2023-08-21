@@ -142,11 +142,13 @@ func Browse(c *gin.Context) {
 	// posts是查询的原数据,postResponses是post基础上添加了用户点赞和删除的信息
 	var posts []model.Post
 	var postResponses []PostResponse
+
 	// 如果是收藏"save"查询,首先查询psave,再查询post
 	if searchsort == "save" {
 		// saves是用户的收藏列表
 		var saves []model.Psave
 		db.Order("psaveID DESC").Offset(offset).Limit(limit).Where("userID = ?", temUser.UserID).Find(&saves)
+		// 根据收藏列表得到帖子列表
 		for _, save := range saves {
 			var post model.Post
 			db.Where("postID = ?", save.PtargetID).First(&post)
@@ -186,26 +188,20 @@ func Browse(c *gin.Context) {
 			postResponses = append(postResponses, postResponse)
 		}
 	} else {
-		// "home"和"history"查询
+		// "home"查询
 		if searchsort == "home" {
 			if partition == "主页" || len(partition) == 0 {
 				if len(searchinfo) == 0 {
-					db.Offset(offset).Limit(limit).Find(&posts)
+					db.Order("postID DESC").Offset(offset).Limit(limit).Find(&posts)
 				} else {
-					db.Offset(offset).Limit(limit).Where("title LIKE ? OR ptext LIKE ? OR tag LIKE ?", "%"+searchinfo+"%", "%"+searchinfo+"%", "%"+searchinfo+"%").Find(&posts)
+					db.Order("postID DESC").Offset(offset).Limit(limit).Where("title LIKE ? OR ptext LIKE ? OR tag LIKE ?", "%"+searchinfo+"%", "%"+searchinfo+"%", "%"+searchinfo+"%").Find(&posts)
 				}
 			} else {
-				db.Offset(offset).Limit(limit).Find(&posts, "`partition` = ?", partition)
+				db.Order("postID DESC").Offset(offset).Limit(limit).Find(&posts, "`partition` = ?", partition)
 			}
 		} else if searchsort == "history" {
-			// historys是用户的历史记录列表
-			var historys []model.Pbrowse
-			db.Order("pbrowseID DESC").Offset(offset).Limit(limit).Where("userID = ?", temUser.UserID).Find(&historys)
-			for _, history := range historys {
-				var post model.Post
-				db.Where("postID = ?", history.PtargetID).First(&post)
-				posts = append(posts, post)
-			}
+			// historys是用户的发帖记录
+			db.Order("postID DESC").Offset(offset).Limit(limit).Find(&posts, "`userID` = ?", temUser.UserID)
 		}
 		// 对每个帖子查询是否点赞和收藏
 		for _, post := range posts {
