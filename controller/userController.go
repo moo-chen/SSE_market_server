@@ -63,6 +63,7 @@ type identity struct {
 }
 
 type ModifyUser struct {
+	Email     string `gorm:"type:varchar(50);not null"`
 	Phone     string `gorm:"type:varchar(11);not null"`
 	Password  string `gorm:"size:255;not null"`
 	Password2 string `gorm:"size:255;not null"`
@@ -250,7 +251,7 @@ func IdentityValidate(c *gin.Context) {
 	}
 
 	arr := strings.Split(email, "@")
-	fmt.Println(arr[1])
+	//fmt.Println(arr[1])
 	if arr[1] != "mail2.sysu.edu.cn" && arr[1] != "mail.sysu.edu.cn" {
 		response.Response(c, http.StatusBadRequest, 400, nil, "请使用中大邮箱！")
 		return
@@ -354,18 +355,18 @@ func ModifyPassword(c *gin.Context) {
 	var user model.User
 	var inputUser ModifyUser
 	c.Bind(&inputUser)
-	phone := inputUser.Phone
+	email := inputUser.Email
 	password := inputUser.Password
 	password2 := inputUser.Password2
-	fmt.Println(phone)
+	fmt.Println(email)
 	fmt.Println(password)
 	fmt.Println(password2)
 	if password != password2 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "密码输入不一致")
 		return
 	}
-	if !isTelephoneExist(db, phone) {
-		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "未找到电话")
+	if !isEmailExist(db, email) {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "未找到邮箱")
 		return
 	}
 
@@ -374,7 +375,7 @@ func ModifyPassword(c *gin.Context) {
 		response.Response(c, http.StatusInternalServerError, 500, nil, "密码加密错误")
 		return
 	}
-	db.Where("phone = ?", phone).First(&user)
+	db.Where("email = ?", email).First(&user)
 	//fmt.Println(phone)
 	//fmt.Println(password)
 	if user.UserID == 0 {
