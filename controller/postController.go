@@ -243,6 +243,7 @@ func Browse(c *gin.Context) {
 				IsSaved:       isSaved,
 				IsLiked:       isLiked,
 				Photos:        post.Photos,
+				Tag:           post.Tag,
 			}
 			postResponses = append(postResponses, postResponse)
 		}
