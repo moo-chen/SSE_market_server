@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
-	"loginTest/common"
 	"loginTest/api"
+	"loginTest/common"
 	"loginTest/dto"
 	"loginTest/model"
 	"loginTest/response"
@@ -102,7 +102,7 @@ func ShowFilterUsers(ctx *gin.Context) {
 		db = db.Model(&model.User{}).Where("idPass = ?", idPass)
 	}
 
-	db.Find(&userList)
+	db.Where("name <> ?", "用户已注销").Find(&userList)
 	response.Success(ctx, gin.H{"data": userList}, "Successfully show all users")
 }
 
@@ -113,10 +113,17 @@ func PassUsers(ctx *gin.Context) {
 	var username = Username{}
 	ctx.Bind(&username)
 	name := username.Name
-	fmt.Println(username)
-	fmt.Println(name)
-	db.Model(&model.User{}).Where("name = ?", name).Update("IDpass", true)
+	if name == "" {
+		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "您未选择用户，无法审核")
+		return
+	}
 	var user model.User
+	db.Where("name = ?", name).Find(&user)
+	if user.IDpass == true {
+		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "该用户已审核通过")
+		return
+	}
+	db.Model(&model.User{}).Where("name = ?", name).Update("IDpass", true)
 	db.Where("name = ?", name).Find(&user)
 	response.Success(ctx, gin.H{"data": user}, "Successfully pass user")
 }
@@ -233,7 +240,6 @@ func DeleteAdmin(ctx *gin.Context) {
 	db.Delete(&checkUser)
 	response.Success(ctx, nil, "成功删除该管理员")
 }
-
 
 func AdminPost(c *gin.Context) {
 	db := common.GetDB()
