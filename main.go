@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/robfig/cron/v3"
+	"github.com/robfig/cron"
 	"github.com/spf13/viper"
 	"log"
 	"loginTest/common"
