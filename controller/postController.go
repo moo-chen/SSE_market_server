@@ -281,7 +281,7 @@ func GetPostNum(c *gin.Context) {
 		if searchsort == "save" {
 			db.Model(&model.Psave{}).Where("userID = ?", user.UserID).Count(&count)
 		} else if searchsort == "history" {
-			db.Model(&model.Pbrowse{}).Where("userID = ?", user.UserID).Count(&count)
+			db.Model(&model.Post{}).Where("userID = ?", user.UserID).Count(&count)
 		}
 	}
 	// 将结果返回给客户端
