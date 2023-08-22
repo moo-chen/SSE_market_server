@@ -81,6 +81,12 @@ func Post(c *gin.Context) {
 	var user model.User
 	db.Where("phone = ?", userTelephone).First(&user)
 
+	currentDateTime := time.Now()
+	if user.Banend.After(currentDateTime) {
+		response.Response(c, http.StatusBadRequest, 400, nil, "你尚处于禁言状态中，不得发帖")
+		return
+	}
+
 	newPost := model.Post{
 		UserID:     int(user.UserID),
 		Partition:  partition,

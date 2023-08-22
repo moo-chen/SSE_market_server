@@ -71,7 +71,14 @@ func NoViolation(c *gin.Context) {
 		"status": "nosin",
 		"finish": true,
 	})
-
+	db.Where("sueID = ?", SueID).First(&sue)
+	targetType := sue.Targettype
+	targetID := sue.TargetID
+	var sue1 model.Sue
+	db.Model(&sue1).Where("targettype = ? AND targetID = ? AND finish = 0", targetType, targetID).Updates(map[string]interface{}{
+		"status": "nosin",
+		"finish": true,
+	})
 }
 
 func Violation(c *gin.Context) {
@@ -85,6 +92,13 @@ func Violation(c *gin.Context) {
 		"finish": true,
 	})
 	db.Where("sueID = ?", SueID).First(&sue)
+	targetType := sue.Targettype
+	targetID := sue.TargetID
+	var sue1 model.Sue
+	db.Model(&sue1).Where("targettype = ? AND targetID = ? AND finish = 0", targetType, targetID).Updates(map[string]interface{}{
+		"status": " ok",
+		"finish": true,
+	})
 	var targetuser model.User
 	var content string
 	var suetype string
@@ -131,7 +145,7 @@ func Violation(c *gin.Context) {
 			db.Model(&post).Update("heat", post.Heat-(deleteHeat+float64(count)))
 		} else {
 			deleteCcommentHeat := float64(count * int64(weightComment))
-			db.Model(&post).Update("heat", post.Heat - (weightComment + deleteCcommentHeat))
+			db.Model(&post).Update("heat", post.Heat-(weightComment+deleteCcommentHeat))
 		}
 		//
 		db.Delete(&pcomment)

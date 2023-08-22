@@ -112,10 +112,10 @@ func DeletePcomment(c *gin.Context) {
 	if days > 0 {
 		weightCommentPower := math.Pow(0.5, float64(days))
 		deleteHeat := math.Pow(weightComment, weightCommentPower)
-		db.Model(&post).Update("heat", post.Heat - (deleteHeat + float64(count)))
+		db.Model(&post).Update("heat", post.Heat-(deleteHeat+float64(count)))
 	} else {
 		deleteCcommentHeat := float64(count * int64(weightComment))
-		db.Model(&post).Update("heat", post.Heat - (weightComment + deleteCcommentHeat))
+		db.Model(&post).Update("heat", post.Heat-(weightComment+deleteCcommentHeat))
 	}
 	//
 	db.Delete(&pcomment)
@@ -218,6 +218,11 @@ func PostPcomment(c *gin.Context) {
 	var user model.User
 	var tempost model.Post
 	db.Where("phone = ?", msg.UserTelephone).First(&user)
+	currentDateTime := time.Now()
+	if user.Banend.After(currentDateTime) {
+		response.Response(c, http.StatusBadRequest, 400, nil, "你尚处于禁言状态中，不得评论")
+		return
+	}
 	db.Where("postID =?", msg.PostID).First(&tempost)
 	pcomment := model.Pcomment{
 		UserID:    user.UserID,
@@ -297,6 +302,13 @@ func PostCcomment(c *gin.Context) {
 	}
 	var user model.User
 	db.Where("phone =?", msg.UserTelephone).First(&user)
+
+	currentDateTime := time.Now()
+	if user.Banend.After(currentDateTime) {
+		response.Response(c, http.StatusBadRequest, 400, nil, "你尚处于禁言状态中，不得评论")
+		return
+	}
+
 	newCcomment := model.Ccomment{
 		UserID:         user.UserID,
 		CtargetID:      msg.PcommentID,
