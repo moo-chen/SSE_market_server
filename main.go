@@ -53,7 +53,7 @@ func main() {
 	// 使用 http.FileServer 文件服务器处理 "/uploads/" 开头的请求，
 	// 文件服务器获取文件的位置在 "./public" 文件夹下。
 	r.StaticFS("/uploads", http.Dir("./public/uploads"))
-
+	r.StaticFS("/resized", http.Dir("./public/resized"))
 	route.CollectRoute(r)
 	srv := &http.Server{
 		Addr:    "172.20.10.2:8080",

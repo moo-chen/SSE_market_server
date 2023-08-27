@@ -2,7 +2,9 @@ package controller
 
 import (
 	"fmt"
-
+	"github.com/disintegration/imaging"
+	"github.com/gin-gonic/gin"
+	"image"
 	"loginTest/api"
 	"loginTest/common"
 	"loginTest/model"
@@ -13,8 +15,6 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
-
-	"github.com/gin-gonic/gin"
 )
 
 type PostMsg struct {
@@ -554,7 +554,6 @@ func UploadPhotos(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "文件上传失败"})
 		return
 	}
-
 	// 文件保存路径和文件名可以根据实际情况修改
 	// 文件名我们采用了当前时间戳和原始文件名的组合，以避免文件名冲突
 	// 时间戳采用 nanoseconds 级别，可以几乎确保每个文件名都是唯一的
@@ -568,9 +567,34 @@ func UploadPhotos(c *gin.Context) {
 		return
 	}
 
+	// 生成略缩图
+	// 打开上传的文件
+	src, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "文件打开失败"})
+		return
+	}
+	defer src.Close()
+	// 读取上传文件的内容，并解码为 image.Image 对象
+	img, _, err := image.Decode(src)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "文件解码失败"})
+		return
+	}
+
+	// 对图像进行缩略图处理
+	resizedImage := imaging.Thumbnail(img, 100, 100, imaging.Lanczos)
+	// 这里似乎只支持绝对路径，这里要根据服务器修改
+	resizedPath := "D:\\wuyh文档\\大二课程\\大二下\\软工中级实训\\web项目\\SSEMARKET\\SSE_market_server\\public\\resized/" + filename
+	err = imaging.Save(resizedImage, resizedPath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "缩略图生成保存失败" + err.Error()})
+		return
+	}
+
 	// 更新 Post 的 Photos 字段
 	// 我们存储的是可以通过 HTTP 访问的 URL，而不是服务器本地的文件路径
-	fileURL := "https://localhost:8080/uploads/" + filename
+	fileURL := "https://localhost:8080/resized/" + filename
 
 	// 返回成功
 	c.JSON(http.StatusOK, gin.H{"fileURL": fileURL, "message": "上传成功"})

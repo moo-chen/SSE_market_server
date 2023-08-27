@@ -118,6 +118,7 @@ func GetNotice(c *gin.Context) {
 				Content:      notice.Ntext,
 				Read:         notice.Read,
 				Target:       notice.Target,
+				Time:         notice.Time,
 			})
 		}
 
