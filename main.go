@@ -56,7 +56,7 @@ func main() {
 
 	route.CollectRoute(r)
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    "172.20.10.2:8080",
 		Handler: r,
 	}
 

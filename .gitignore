@@ -6,3 +6,4 @@ config/application.yml
 loginTest.exe
 loginTest.exe
 config/application.yml
+public/uploads
