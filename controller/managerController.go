@@ -107,26 +107,26 @@ func ShowFilterUsers(ctx *gin.Context) {
 }
 
 // 更改是否审查
-func PassUsers(ctx *gin.Context) {
-	fmt.Println("start to pass")
-	db := common.DB
-	var username = Username{}
-	ctx.Bind(&username)
-	name := username.Name
-	if name == "" {
-		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "您未选择用户，无法审核")
-		return
-	}
-	var user model.User
-	db.Where("name = ?", name).Find(&user)
-	if user.IDpass == true {
-		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "该用户已审核通过")
-		return
-	}
-	db.Model(&model.User{}).Where("name = ?", name).Update("IDpass", true)
-	db.Where("name = ?", name).Find(&user)
-	response.Success(ctx, gin.H{"data": user}, "Successfully pass user")
-}
+//func PassUsers(ctx *gin.Context) {
+//	fmt.Println("start to pass")
+//	db := common.DB
+//	var username = Username{}
+//	ctx.Bind(&username)
+//	name := username.Name
+//	if name == "" {
+//		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "您未选择用户，无法审核")
+//		return
+//	}
+//	var user model.User
+//	db.Where("name = ?", name).Find(&user)
+//	if user.IDpass == true {
+//		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "该用户已审核通过")
+//		return
+//	}
+//	db.Model(&model.User{}).Where("name = ?", name).Update("IDpass", true)
+//	db.Where("name = ?", name).Find(&user)
+//	response.Success(ctx, gin.H{"data": user}, "Successfully pass user")
+//}
 
 // 添加管理员
 func AddAdmin(ctx *gin.Context) {

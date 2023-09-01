@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/brianvoe/gofakeit"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
@@ -15,8 +16,6 @@ import (
 	"loginTest/util"
 	"net/http"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -38,14 +37,14 @@ func isEmailExist(db *gorm.DB, email string) bool {
 	return false
 }
 
-func isNumExist(db *gorm.DB, num int) bool {
-	var user model.User
-	db.Where("num = ?", num).First(&user)
-	if user.UserID != 0 {
-		return true
-	}
-	return false
-}
+//func isNumExist(db *gorm.DB, num int) bool {
+//	var user model.User
+//	db.Where("num = ?", num).First(&user)
+//	if user.UserID != 0 {
+//		return true
+//	}
+//	return false
+//}
 
 type registerUser struct {
 	Name      string `gorm:"type:varchar(20);not null"`
@@ -53,8 +52,9 @@ type registerUser struct {
 	Password  string `gorm:"size:255;not null"`
 	Password2 string `gorm:"size:255;not null"`
 	Email     string `gorm:"type:varchar(11);not null"`
-	Num       string `gorm:"type:varchar(8);not null"`
-	ValiCode  string `gorm:"type:varchar(10);not null"`
+	//Num       string `gorm:"type:varchar(8);not null"`
+	ValiCode string `gorm:"type:varchar(10);not null"`
+	CDKey    string `json:"CDKey"`
 }
 
 type identity struct {
@@ -100,7 +100,7 @@ func DeleteMe(c *gin.Context) {
 
 	checkUser.Name = "用户已注销"
 	checkUser.Phone = "0"
-	checkUser.Num = 0
+	//checkUser.Num = 0
 	checkUser.Email = ""
 	checkUser.AvatarURL = ""
 
@@ -121,15 +121,24 @@ func Register(c *gin.Context) {
 	password1 := requestUser.Password
 	password2 := requestUser.Password2
 	email := requestUser.Email
-	num := requestUser.Num
+	//num := requestUser.Num
 	valiCode := requestUser.ValiCode
-
+	cdkey := requestUser.CDKey
 	//若使用postman等工具，写法如下：
 	// name := c.PostForm("name")
 	// telephone := c.PostForm("telephone")
 	// password := c.PostForm("password")
 	// PostForm中的参数与在postman中发送信息的名字要一致
-
+	if len(telephone) == 0 {
+		for {
+			telephone = util.GenerateRandomDigits(11)
+			// 如果存在，继续生成新的随机字符串
+			// 如果不存在，退出循环
+			if !isTelephoneExist(db, telephone) {
+				break
+			}
+		}
+	}
 	//验证数据
 	if len(telephone) != 11 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "手机号必须为11位!!!")
@@ -150,7 +159,7 @@ func Register(c *gin.Context) {
 	}
 	//如果名称没有传，给一个10位的随机字符串
 	if len(name) == 0 {
-		name = util.RandomString(10)
+		name = gofakeit.Name()
 	}
 	// 判断手机号是否存在
 	if isTelephoneExist(db, telephone) {
@@ -163,13 +172,6 @@ func Register(c *gin.Context) {
 			check = true
 		}
 	}
-
-	arr := strings.Split(email, "@")
-	if arr[1] != "mail2.sysu.edu.cn" && arr[1] != "mail.sysu.edu.cn" {
-		response.Response(c, http.StatusBadRequest, 400, nil, "请使用中大邮箱！")
-		return
-	}
-
 	if !check {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "邮箱不符合要求")
 		return
@@ -189,22 +191,28 @@ func Register(c *gin.Context) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "验证码错误")
 		return
 	}
+	var key model.CDKey
+	db.Where("content =? AND used = 0", cdkey).First(&key)
+	if key.CDKeyID == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "激活码错误")
+		return
+	}
 	// 创建用户
 	hasedPassword, err := bcrypt.GenerateFromPassword([]byte(password1), bcrypt.DefaultCost)
 	if err != nil {
 		response.Response(c, http.StatusInternalServerError, 500, nil, "密码加密错误")
 		return
 	}
-	numInt, err := strconv.Atoi(num)
-	fmt.Println(num, numInt)
-	if err != nil {
-		response.Response(c, http.StatusInternalServerError, 400, nil, "学号异常")
-		return
-	}
-	if isNumExist(db, numInt) {
-		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "该学号已存在")
-		return
-	}
+	//numInt, err := strconv.Atoi(num)
+	//fmt.Println(num, numInt)
+	//if err != nil {
+	//	response.Response(c, http.StatusInternalServerError, 400, nil, "学号异常")
+	//	return
+	//}
+	//if isNumExist(db, numInt) {
+	//	response.Response(c, http.StatusUnprocessableEntity, 400, nil, "该学号已存在")
+	//	return
+	//}
 	// 创建新用户结构体
 	newUser := model.User{
 		Name:     name,
@@ -212,7 +220,7 @@ func Register(c *gin.Context) {
 		Password: string(hasedPassword),
 		Banend:   time.Now(),
 		Email:    email,
-		Num:      numInt,
+		//Num:      numInt,
 	}
 	// 将结构体传进Create函数即可在数据库中添加一条记录
 	// 其他的增删查改功能参见postController里的updateLike函数
@@ -221,11 +229,16 @@ func Register(c *gin.Context) {
 		response.Response(c, http.StatusInternalServerError, 400, nil, "userID为0")
 		return
 	}
+	// 修改激活码
+	// 警告：当使用 struct 更新时，GORM只会更新那些非零值的字段
+	db.Model(&key).Update(model.CDKey{
+		Used:     true,
+		UsedTime: time.Now(),
+	})
 	//发放token
 	token, err := common.ReleaseToken(newUser)
 	if err != nil {
-		response.Response(c, http.StatusInternalServerError, 400, nil, "系统异常")
-
+		response.Response(c, http.StatusInternalServerError, 400, nil, "账号已注册，但无法返回token")
 		log.Printf("token generate error: %v", err)
 		return
 	}
@@ -250,12 +263,12 @@ func IdentityValidate(c *gin.Context) {
 		}
 	}
 
-	arr := strings.Split(email, "@")
+	//arr := strings.Split(email, "@")
 	//fmt.Println(arr[1])
-	if arr[1] != "mail2.sysu.edu.cn" && arr[1] != "mail.sysu.edu.cn" {
-		response.Response(c, http.StatusBadRequest, 400, nil, "请使用中大邮箱！")
-		return
-	}
+	//if arr[1] != "mail2.sysu.edu.cn" && arr[1] != "mail.sysu.edu.cn" {
+	//	response.Response(c, http.StatusBadRequest, 400, nil, "请使用中大邮箱！")
+	//	return
+	//}
 
 	if !check {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "邮箱不符合要求")
@@ -313,10 +326,10 @@ func Login(c *gin.Context) {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "邮箱号为空！"+email)
 		return
 	}
-	if !(strings.HasSuffix(email, "@mail.sysu.edu.cn") || strings.HasSuffix(email, "@mail2.sysu.edu.cn")) {
-		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "请输入正确的中大邮箱")
-		return
-	}
+	//if !(strings.HasSuffix(email, "@mail.sysu.edu.cn") || strings.HasSuffix(email, "@mail2.sysu.edu.cn")) {
+	//	response.Response(c, http.StatusUnprocessableEntity, 400, nil, "请输入正确的中大邮箱")
+	//	return
+	//}
 	if len(password) < 6 {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "密码不能少于6位")
 		return
@@ -334,10 +347,10 @@ func Login(c *gin.Context) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "密码错误")
 		return
 	}
-	if user.IDpass == false {
-		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "用户注册尚未通过审核，请耐心等待")
-		return
-	}
+	//if user.IDpass == false {
+	//	response.Response(c, http.StatusUnprocessableEntity, 400, nil, "用户注册尚未通过审核，请耐心等待")
+	//	return
+	//}
 	//发放token
 	token, err := common.ReleaseToken(user)
 	if err != nil {
@@ -395,12 +408,12 @@ func ValidateEmail(c *gin.Context) {
 	fmt.Println("email = ", email)
 	fmt.Println("mode = ", mode)
 
-	arr := strings.Split(email, "@")
+	//arr := strings.Split(email, "@")
 	//fmt.Println(arr[1])
-	if arr[1] != "mail2.sysu.edu.cn" && arr[1] != "mail.sysu.edu.cn" {
-		response.Response(c, http.StatusBadRequest, 400, gin.H{"data": email, "mode": mode}, "请使用中大邮箱！")
-		return
-	}
+	//if arr[1] != "mail2.sysu.edu.cn" && arr[1] != "mail.sysu.edu.cn" {
+	//	response.Response(c, http.StatusBadRequest, 400, gin.H{"data": email, "mode": mode}, "请使用中大邮箱！")
+	//	return
+	//}
 
 	db := common.DB
 	if mode == 1 && !isEmailExist(db, email) {
@@ -549,11 +562,11 @@ func GetInfo(c *gin.Context) {
 	}
 	// 返回用户的所有信息
 	c.JSON(http.StatusOK, gin.H{
-		"userID":    user.UserID,
-		"phone":     user.Phone,
-		"email":     user.Email,
-		"name":      user.Name,
-		"num":       user.Num,
+		"userID": user.UserID,
+		"phone":  user.Phone,
+		"email":  user.Email,
+		"name":   user.Name,
+		//"num":       user.Num,
 		"intro":     user.Intro,
 		"ban":       user.Banend,
 		"punishnum": user.Punishnum,
@@ -595,7 +608,7 @@ func UpdateUserInfo(c *gin.Context) {
 
 	// 更新用户信息
 	user.Name = userInfo.Name
-	user.Num = userInfo.Num
+	//user.Num = userInfo.Num
 	user.Intro = userInfo.Intro
 	user.AvatarURL = userInfo.AvatarURL
 
