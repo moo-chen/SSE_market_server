@@ -57,7 +57,7 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	// 给管理员设置一个新的路由分组
 	adminAuth := r.Group("")
 	adminAuth.Use(middleware.AuthMiddleware_admin())
-	adminAuth.POST("/api/auth/passUsers", controller.PassUsers)
+	//adminAuth.POST("/api/auth/passUsers", controller.PassUsers)
 	adminAuth.POST("/api/auth/addAdmin", controller.AddAdmin)
 	adminAuth.POST("/api/auth/changePassword", controller.ChangeAdminPassword)
 	adminAuth.POST("/api/auth/deleteUser", controller.DeleteUser)

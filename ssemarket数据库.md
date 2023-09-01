@@ -125,5 +125,11 @@
 - 点赞人ID（用户的外键）userID int
 - 点赞目标ID（帖子的外键）ptargetID int
 
+## 邀请码 CDKey
 
+- 邀请码ID cdkeyID int
+- 邀请码号 content char(6)
+- 是否使用 used tinyint(1)
+- 创建时间 createdtime datetime
+- 使用时间 usedtime datetime
 
