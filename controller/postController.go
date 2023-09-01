@@ -585,7 +585,7 @@ func UploadPhotos(c *gin.Context) {
 	// 对图像进行缩略图处理
 	resizedImage := imaging.Thumbnail(img, 100, 100, imaging.Lanczos)
 	// 这里似乎只支持绝对路径，这里要根据服务器修改
-	resizedPath := "D:\\wuyh文档\\大二课程\\大二下\\软工中级实训\\web项目\\SSEMARKET\\SSE_market_server\\public\\resized/" + filename
+	resizedPath := "D:\\SSE_market\\test\\serverTest2\\SSE_market_server\\public\\resized/" + filename
 	err = imaging.Save(resizedImage, resizedPath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "缩略图生成保存失败" + err.Error()})
