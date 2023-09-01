@@ -7,3 +7,4 @@ loginTest.exe
 loginTest.exe
 config/application.yml
 public/uploads
+public/resized
