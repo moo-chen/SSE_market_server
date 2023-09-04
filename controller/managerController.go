@@ -9,6 +9,7 @@ import (
 	"loginTest/dto"
 	"loginTest/model"
 	"loginTest/response"
+	"loginTest/util"
 	"net/http"
 	"strings"
 	"time"
@@ -53,6 +54,7 @@ func AdminLogin(ctx *gin.Context) {
 
 	account := requesrAdmin.Account
 	password := requesrAdmin.Password
+	password = util.Decrypt(password)
 
 	var admin model.Admin
 	db.Where("account = ?", account).First(&admin)
@@ -137,6 +139,8 @@ func AddAdmin(ctx *gin.Context) {
 	account := newAdmin.Account
 	pass1 := newAdmin.Password1
 	pass2 := newAdmin.Password2
+	pass1 = util.Decrypt(pass1)
+	pass2 = util.Decrypt(pass2)
 	var admin model.Admin
 	if account == "" {
 		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "账号不能为空")
@@ -165,9 +169,14 @@ func AddAdmin(ctx *gin.Context) {
 		return
 	}
 
+	cnt := 0
+	db.Model(&model.Admin{}).Count(&cnt)
+	fmt.Println(cnt)
+
 	addAdmin := model.Admin{
 		Account:  account,
 		Password: pass1,
+		AdminID:  cnt + 1,
 	}
 	db.Create(&addAdmin)
 
@@ -184,6 +193,8 @@ func ChangeAdminPassword(ctx *gin.Context) {
 	account := admin.Account
 	pass1 := admin.Password1
 	pass2 := admin.Password2
+	pass1 = util.Decrypt(pass1)
+	pass2 = util.Decrypt(pass2)
 	if pass1 != pass2 {
 		response.Response(ctx, http.StatusUnprocessableEntity, 400, nil, "两次密码不同，请重新输入")
 		return
@@ -197,8 +208,8 @@ func ChangeAdminPassword(ctx *gin.Context) {
 	addAdmin := model.Admin{
 		Account:  account,
 		Password: pass1,
+		AdminID:  newAdmin.AdminID,
 	}
-
 	db.Save(&addAdmin)
 	response.Success(ctx, gin.H{"data": newAdmin}, "成功修改管理员密码")
 }
@@ -237,7 +248,7 @@ func DeleteAdmin(ctx *gin.Context) {
 		return
 	}
 
-	db.Delete(&checkUser)
+	db.Where("account = ?", account).Delete(&checkUser)
 	response.Success(ctx, nil, "成功删除该管理员")
 }
 
