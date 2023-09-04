@@ -120,6 +120,8 @@ func Register(c *gin.Context) {
 	telephone := requestUser.Phone
 	password1 := requestUser.Password
 	password2 := requestUser.Password2
+	password1 = util.Decrypt(password1)
+	password2 = util.Decrypt(password2)
 	email := requestUser.Email
 	//num := requestUser.Num
 	valiCode := requestUser.ValiCode
@@ -311,6 +313,7 @@ func Login(c *gin.Context) {
 	//telephone := requestUser.Phone
 	email := requestUser.Email
 	password := requestUser.Password
+	password = util.Decrypt(password)
 	//数据验证
 	//if len(telephone) == 0 {
 	//	msg := "手机号为空！" + telephone
@@ -370,7 +373,9 @@ func ModifyPassword(c *gin.Context) {
 	c.Bind(&inputUser)
 	email := inputUser.Email
 	password := inputUser.Password
+	password = util.Decrypt(password)
 	password2 := inputUser.Password2
+	password2 = util.Decrypt(password2)
 	fmt.Println(email)
 	fmt.Println(password)
 	fmt.Println(password2)
