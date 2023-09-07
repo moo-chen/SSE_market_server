@@ -62,7 +62,7 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	adminAuth.POST("/api/auth/changePassword", controller.ChangeAdminPassword)
 	adminAuth.POST("/api/auth/deleteUser", controller.DeleteUser)
 	adminAuth.POST("/api/auth/deleteAdmin", controller.DeleteAdmin)
-	noauth.POST("/api/auth/showUsers", controller.ShowFilterUsers)
+	adminAuth.POST("/api/auth/showUsers", controller.ShowFilterUsers)
 	r.POST("/api/auth/adminLogin", controller.AdminLogin)
 	adminAuth.GET("/api/auth/admininfo", controller.AdminInfo)
 	adminAuth.GET("/api/auth/getSues", controller.GetSues)
