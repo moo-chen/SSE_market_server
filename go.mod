@@ -3,7 +3,7 @@ module loginTest
 go 1.20
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/brianvoe/gofakeit v2.2.0+incompatible
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/jinzhu/gorm v1.9.16
@@ -17,20 +17,18 @@ require (
 	golang.org/x/crypto v0.10.0
 )
 
-require github.com/alexbrainman/odbc v0.0.0-20211220213544-9c9a2e61c5e2
+require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/disintegration/imaging v1.6.2
+	github.com/robfig/cron v1.2.0
+)
 
 require (
-<<<<<<< HEAD
-	github.com/brianvoe/gofakeit v2.2.0+incompatible // indirect
-=======
-	github.com/brianvoe/gofakeit v3.18.0+incompatible // indirect
->>>>>>> d34ce5f23de4f9500735e033fdf7f5f6778e0507
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -50,14 +48,11 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/robfig/cron v1.2.0 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cvm v1.0.643 // indirect
-	github.com/thinkerou/favicon v0.2.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.3.0 // indirect
