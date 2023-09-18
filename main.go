@@ -8,6 +8,7 @@ import (
 	"log"
 	"loginTest/common"
 	"loginTest/config"
+	"loginTest/middleware"
 	"loginTest/route"
 	"net/http"
 	"os/exec"
@@ -23,7 +24,7 @@ func Copy() {
 	dbName := viper.GetString("datasource.database")
 
 	// 备份目录
-	backupDir := "/Users/michael/Documents/backup"
+	backupDir := "/app/database"
 
 	c := cron.New()
 	c.AddFunc("@daily", func() {
@@ -49,7 +50,7 @@ func main() {
 	defer rds.Close()
 	defer db.Close()
 	r = gin.Default()
-
+	r.Use(middleware.LoggerToFile())
 	// 使用 http.FileServer 文件服务器处理 "/uploads/" 开头的请求，
 	// 文件服务器获取文件的位置在 "./public" 文件夹下。
 	r.StaticFS("/uploads", http.Dir("./public/uploads"))
