@@ -41,6 +41,9 @@ func GetSuggestion(inStr string) string {
 		panic(err)
 	}
 	// 输出json格式的字符串回包
+	if *response.Response.Label == "Ad" {
+		return "Review"
+	}
 	return *response.Response.Suggestion
 }
 
