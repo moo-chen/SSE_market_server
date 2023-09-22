@@ -95,6 +95,10 @@ func DeletePcomment(c *gin.Context) {
 	PcommentID := ID.PcommentID
 	var pcomment model.Pcomment
 	db.Where("pcommentID = ?", PcommentID).First(&pcomment)
+	if pcomment.PcommentID == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "未找到该评论")
+		return
+	}
 	// 剪掉相应的热度
 	currentTime := time.Now()
 	timedif := currentTime.Sub(pcomment.Time)
@@ -132,6 +136,10 @@ func DeleteCcomment(c *gin.Context) {
 	CcommentID := ID.CcommentID
 	var ccomment model.Ccomment
 	db.Where("ccommentID = ?", CcommentID).First(&ccomment)
+	if ccomment.CcommentID == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "未找到该评论")
+		return
+	}
 	// 剪掉相应的热度
 	currentTime := time.Now()
 	timedif := currentTime.Sub(ccomment.Time)

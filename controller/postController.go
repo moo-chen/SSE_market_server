@@ -428,7 +428,12 @@ func DeletePost(c *gin.Context) {
 	PostID := ID.PostID
 	var post model.Post
 	db.Where("postID = ?", PostID).First(&post)
+	if post.PostID == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "需要删除的帖子不存在")
+		return
+	}
 	db.Delete(&post)
+	c.JSON(http.StatusOK, gin.H{"message": "帖子删除成功"})
 }
 
 type Reportmsg struct {
