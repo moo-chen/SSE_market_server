@@ -432,6 +432,12 @@ func DeletePost(c *gin.Context) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "需要删除的帖子不存在")
 		return
 	}
+	// 获取token中的用户标识符
+    tokenUserID := GetTokenUserID(c)
+	if tokenUserID != post.UserID {
+        response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
+        return
+    }
 	db.Delete(&post)
 	c.JSON(http.StatusOK, gin.H{"message": "帖子删除成功"})
 }

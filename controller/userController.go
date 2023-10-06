@@ -17,7 +17,24 @@ import (
 	"net/http"
 	"path/filepath"
 	"time"
+	"strings"
 )
+
+func GetTokenUserID(c *gin.Context) int {
+	tokenString := c.GetHeader("Authorization")
+    if tokenString == "" || len(tokenString) <= 7 || !strings.HasPrefix(tokenString, "Bearer ") {
+        return 0
+    }
+    tokenString = tokenString[7:]
+    token, claims, err := common.ParseToken(tokenString)
+    if err != nil || !token.Valid {
+        return 0
+    }
+
+    // 获取token中的用户标识符
+    tokenUserID := claims.UserID
+	return tokenUserID
+}
 
 func isTelephoneExist(db *gorm.DB, telephone string) bool {
 	var user model.User
@@ -457,7 +474,7 @@ func UploadAvatar(c *gin.Context) {
 
 	db := common.GetDB()
 	var user model.User
-
+	
 	timestamp := time.Now().UnixNano()
 	filename := fmt.Sprintf("%d_%s", timestamp, file.Filename)
 	filepath := "public/uploads/" + filename
@@ -481,8 +498,6 @@ func UploadAvatar(c *gin.Context) {
 func UpdateAvatar(c *gin.Context) {
 	// 用于移动端
 	phone := c.PostForm("phone")
-	fmt.Println(phone)
-	fmt.Println(len(phone))
 	if len(phone) != 11 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "Invalid phone number")
 		return
@@ -508,7 +523,6 @@ func UpdateAvatar(c *gin.Context) {
 		response.Response(c, http.StatusNotFound, 404, nil, "User not found")
 		return
 	}
-
 	timestamp := time.Now().UnixNano()
 	filename := fmt.Sprintf("%d_%s", timestamp, filepath.Base(file.Filename)) // Use base to avoid path traversal
 	filepath := "public/uploads/" + filename
@@ -545,7 +559,6 @@ func GetAvatar(c *gin.Context) {
 		}
 		return
 	}
-
 	// 返回用户的头像URL
 	response.Success(c, gin.H{"phone": user.Phone, "AvatarURL": user.AvatarURL}, "获取成功")
 }
@@ -610,6 +623,12 @@ func UpdateUserInfo(c *gin.Context) {
 		}
 		return
 	}
+    // 获取token中的用户标识符
+    tokenUserID := GetTokenUserID(c)
+	if tokenUserID != user.UserID {
+        response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
+        return
+    }
 
 	// 更新用户信息
 	user.Name = userInfo.Name
