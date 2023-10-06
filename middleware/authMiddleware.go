@@ -23,7 +23,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		tokenString = tokenString[7:]
 		token, claims, err := common.ParseToken(tokenString)
 		if err != nil || !token.Valid {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足}"})
+			ctx.JSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "权限不足"})
 			ctx.Abort()
 			return
 		}
