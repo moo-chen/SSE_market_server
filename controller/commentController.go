@@ -226,6 +226,12 @@ func PostPcomment(c *gin.Context) {
 	var user model.User
 	var tempost model.Post
 	db.Where("phone = ?", msg.UserTelephone).First(&user)
+	// 获取token中的用户标识符
+    tokenUserID := GetTokenUserID(c)
+	if tokenUserID != user.UserID {
+        response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
+        return
+    }
 	currentDateTime := time.Now()
 	if user.Banend.After(currentDateTime) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "你尚处于禁言状态中，不得评论")
@@ -310,7 +316,12 @@ func PostCcomment(c *gin.Context) {
 	}
 	var user model.User
 	db.Where("phone =?", msg.UserTelephone).First(&user)
-
+	// 获取token中的用户标识符
+    tokenUserID := GetTokenUserID(c)
+	if tokenUserID != user.UserID {
+        response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
+        return
+    }
 	currentDateTime := time.Now()
 	if user.Banend.After(currentDateTime) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "你尚处于禁言状态中，不得评论")
@@ -396,6 +407,12 @@ func UpdatePcommentLike(c *gin.Context) {
 	// Find the user by telephone
 	var user model.User
 	db.Where("phone = ?", userTelephone).First(&user)
+	// 获取token中的用户标识符
+    tokenUserID := GetTokenUserID(c)
+	if tokenUserID != user.UserID {
+        response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
+        return
+    }
 	var pcomment model.Pcomment
 	db.Where("pcommentID = ?", pcommentID).First(&pcomment)
 	if isLiked {
@@ -437,6 +454,12 @@ func UpdateCcommentLike(c *gin.Context) {
 	// Find the user by ID
 	var user model.User
 	db.Where("phone =?", userTelephone).First(&user)
+	// 获取token中的用户标识符
+    tokenUserID := GetTokenUserID(c)
+	if tokenUserID != user.UserID {
+        response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
+        return
+    }
 	var ccomment model.Ccomment
 	db.Where("ccommentID =?", ccommentID).First(&ccomment)
 	if isLiked {

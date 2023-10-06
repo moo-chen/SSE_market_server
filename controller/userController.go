@@ -105,7 +105,6 @@ func DeleteMe(c *gin.Context) {
 	var checkUser model.User
 	db.Where("phone = ?", phone).First(&checkUser)
 	userID := checkUser.UserID
-
 	if checkUser.Email != email {
 		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "请用注册时使用的email完成注销")
 		return
