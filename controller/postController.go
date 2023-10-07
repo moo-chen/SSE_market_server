@@ -86,6 +86,13 @@ func Post(c *gin.Context) {
 		return
 	}
 
+	// 获取token中的用户标识符
+	tokenUserID := GetTokenUserID(c)
+	if tokenUserID != user.UserID {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
+		return
+	}
+
 	currentDateTime := time.Now()
 	if user.Banend.After(currentDateTime) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "你尚处于禁言状态中，不得发帖")
@@ -336,6 +343,12 @@ func UpdateSave(c *gin.Context) {
 		return
 	}
 	var post model.Post
+	// 获取token中的用户标识符
+	tokenUserID := GetTokenUserID(c)
+	if tokenUserID != user.UserID {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
+		return
+	}
 	db.Where("postID = ?", postID).First(&post)
 	if post.PostID == 0 {
 		return
@@ -377,6 +390,12 @@ func UpdateLike(c *gin.Context) {
 		return
 	}
 	var post model.Post
+	// 获取token中的用户标识符
+	tokenUserID := GetTokenUserID(c)
+	if tokenUserID != user.UserID {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
+		return
+	}
 	db.Where("postID = ?", postID).First(&post)
 	if post.PostID == 0 {
 		return
@@ -507,6 +526,12 @@ func SubmitReport(c *gin.Context) {
 	var user model.User
 	db.Where("phone = ?", userTelephone).First(&user)
 	if user.UserID == 0 {
+		return
+	}
+	// 获取token中的用户标识符
+	tokenUserID := GetTokenUserID(c)
+	if tokenUserID != user.UserID {
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
 		return
 	}
 	newSue := model.Sue{
