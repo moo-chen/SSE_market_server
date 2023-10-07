@@ -108,6 +108,9 @@ func Violation(c *gin.Context) {
 		suetype = "帖子"
 		var post model.Post
 		db.Where("postID = ?", sue.TargetID).First(&post)
+		if post.PostID == 0 {
+			return
+		}
 		if len(post.Ptext) <= 30 {
 			content = post.Ptext
 		} else {
@@ -119,6 +122,9 @@ func Violation(c *gin.Context) {
 		suetype = "评论"
 		var pcomment model.Pcomment
 		db.Where("pcommentID = ?", sue.TargetID).First(&pcomment)
+		if pcomment.PcommentID == 0 {
+			return
+		}
 		if len(pcomment.Pctext) <= 30 {
 			content = pcomment.Pctext
 		} else {
@@ -153,6 +159,9 @@ func Violation(c *gin.Context) {
 		suetype = "评论"
 		var ccomment model.Ccomment
 		db.Where("ccommentID = ?", sue.TargetID).First(&ccomment)
+		if ccomment.CcommentID == 0 {
+			return
+		}
 		if len(ccomment.Cctext) <= 30 {
 			content = ccomment.Cctext
 		} else {
