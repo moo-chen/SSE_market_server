@@ -81,6 +81,10 @@ func Post(c *gin.Context) {
 
 	var user model.User
 	db.Where("phone = ?", userTelephone).First(&user)
+	if user.UserID == 0 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "用户不存在")
+		return
+	}
 
 	currentDateTime := time.Now()
 	if user.Banend.After(currentDateTime) {
@@ -146,6 +150,9 @@ func Browse(c *gin.Context) {
 	// 查询用户
 	var temUser model.User
 	db.Where("phone = ?", userTelephone).First(&temUser)
+	if temUser.UserID == 0 {
+		return
+	}
 	// posts是查询的原数据,postResponses是post基础上添加了用户点赞和删除的信息
 	var posts []model.Post
 	var postResponses []PostResponse
@@ -288,6 +295,9 @@ func GetPostNum(c *gin.Context) {
 		// 查询用户
 		var user model.User
 		db.Where("phone = ?", userTelephone).First(&user)
+		if user.UserID == 0 {
+			return
+		}
 		if searchsort == "save" {
 			db.Model(&model.Psave{}).
 				Joins("INNER JOIN posts ON psaves.ptargetID = posts.postID").
@@ -322,6 +332,9 @@ func UpdateSave(c *gin.Context) {
 	// Find the user by telephone
 	var user model.User
 	db.Where("phone = ?", userTelephone).First(&user)
+	if user.UserID == 0 {
+		return
+	}
 	var post model.Post
 	db.Where("postID = ?", postID).First(&post)
 	if post.PostID == 0 {
@@ -360,6 +373,9 @@ func UpdateLike(c *gin.Context) {
 	// Find the user by telephone
 	var user model.User
 	db.Where("phone = ?", userTelephone).First(&user)
+	if user.UserID == 0 {
+		return
+	}
 	var post model.Post
 	db.Where("postID = ?", postID).First(&post)
 	if post.PostID == 0 {
@@ -424,6 +440,9 @@ func UpdateBrowseNum(c *gin.Context) {
 	// browseNum := requestBrowseMsg.BrowseNum 不用获取直接+1
 	var user model.User
 	db.Where("phone = ?", userTelephone).First(&user)
+	if user.UserID == 0 {
+		return
+	}
 	var post model.Post
 	db.Where("postID = ?", postID).First(&post)
 	if post.PostID == 0 {
@@ -487,6 +506,9 @@ func SubmitReport(c *gin.Context) {
 	}
 	var user model.User
 	db.Where("phone = ?", userTelephone).First(&user)
+	if user.UserID == 0 {
+		return
+	}
 	newSue := model.Sue{
 		Targettype: Targettype,
 		TargetID:   int(TargetID),
