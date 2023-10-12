@@ -3,10 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"github.com/brianvoe/gofakeit"
-	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"loginTest/api"
 	"loginTest/common"
@@ -16,23 +12,28 @@ import (
 	"loginTest/util"
 	"net/http"
 	"path/filepath"
-	"time"
 	"strings"
+	"time"
+
+	"github.com/brianvoe/gofakeit"
+	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func GetTokenUserID(c *gin.Context) int {
 	tokenString := c.GetHeader("Authorization")
-    if tokenString == "" || len(tokenString) <= 7 || !strings.HasPrefix(tokenString, "Bearer ") {
-        return 0
-    }
-    tokenString = tokenString[7:]
-    token, claims, err := common.ParseToken(tokenString)
-    if err != nil || !token.Valid {
-        return 0
-    }
+	if tokenString == "" || len(tokenString) <= 7 || !strings.HasPrefix(tokenString, "Bearer ") {
+		return 0
+	}
+	tokenString = tokenString[7:]
+	token, claims, err := common.ParseToken(tokenString)
+	if err != nil || !token.Valid {
+		return 0
+	}
 
-    // 获取token中的用户标识符
-    tokenUserID := claims.UserID
+	// 获取token中的用户标识符
+	tokenUserID := claims.UserID
 	return tokenUserID
 }
 
@@ -473,7 +474,7 @@ func UploadAvatar(c *gin.Context) {
 
 	db := common.GetDB()
 	var user model.User
-	
+
 	timestamp := time.Now().UnixNano()
 	filename := fmt.Sprintf("%d_%s", timestamp, file.Filename)
 	filepath := "public/uploads/" + filename
@@ -622,12 +623,12 @@ func UpdateUserInfo(c *gin.Context) {
 		}
 		return
 	}
-    // 获取token中的用户标识符
-    tokenUserID := GetTokenUserID(c)
+	// 获取token中的用户标识符
+	tokenUserID := GetTokenUserID(c)
 	if tokenUserID != user.UserID {
-        response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
-        return
-    }
+		response.Response(c, http.StatusUnprocessableEntity, 400, nil, "权限不足")
+		return
+	}
 
 	// 更新用户信息
 	user.Name = userInfo.Name
@@ -640,4 +641,61 @@ func UpdateUserInfo(c *gin.Context) {
 		return
 	}
 	response.Response(c, http.StatusOK, 200, nil, "用户信息更新成功")
+}
+
+func CalculateAndSaveScores() {
+	db := common.GetDB()
+	var users []model.User
+	db.Find(&users)
+	for _, user := range users { //对每个用户进行积分统计
+		if user.UserID == 0 {
+			continue
+		}
+		// 查询用户的post ID
+		var postIDs []int
+		db.Model(&model.Post{}).Where("userID = ?", user.UserID).Pluck("postID", &postIDs)
+		// 统计post被点赞个数
+		totalLikeNum := 0
+		for _, postID := range postIDs {
+			var likeNum int
+			db.Model(&model.Post{}).Where("postID = ?", postID).Select("like_num").Row().Scan(&likeNum)
+			totalLikeNum += likeNum
+		}
+		// 查询用户的 pcomment ID
+		var pcommentIDs []int
+		db.Model(&model.Pcomment{}).Where("userID = ?", user.UserID).Pluck("pcommentID", &pcommentIDs)
+		// 统计pcomment被点赞个数
+		for _, pcommentID := range pcommentIDs {
+			var likeNum int
+			db.Model(&model.Pcomment{}).Where("pcommentID = ?", pcommentID).Select("like_num").Row().Scan(&likeNum)
+			totalLikeNum += likeNum
+		}
+		// 统计被收藏个数
+		var psaveCount int
+		db.Model(&model.Psave{}).Where("ptargetID IN (?)", postIDs).Count(&psaveCount)
+		// 统计帖子被评论个数
+		var commentedCount int
+		db.Model(&model.Pcomment{}).Where("ptargetID IN (?)", postIDs).Not("userID = ?", user.UserID).Count(&commentedCount)
+		// 统计评论被回复个数
+		var repliedCount int
+		db.Model(&model.Ccomment{}).Where("ctargetID IN (?)", pcommentIDs).Not("userID = ?", user.UserID).Count(&repliedCount)
+		// 查询用户的 ccomment ID
+		var ccommentIDs []int
+		db.Model(&model.Ccomment{}).Where("userID = ?", user.UserID).Pluck("ccommentID", &ccommentIDs)
+		// 统计ccomment被点赞个数
+		for _, ccommentID := range ccommentIDs {
+			var likeNum int
+			db.Model(&model.Ccomment{}).Where("ccommentID = ?", ccommentID).Select("like_num").Row().Scan(&likeNum)
+			totalLikeNum += likeNum
+		}
+		// 统计成功举报个数
+		var sueCount int
+		db.Model(&model.Sue{}).Where("status = ? AND finish = ? AND userID = ?", " ok", 1, user.UserID).
+			Select("DISTINCT targettype, targetID").
+			Count(&sueCount)
+		// 计算总积分并保存
+		totalScore := len(postIDs)*10 + len(pcommentIDs)*5 + len(ccommentIDs)*5 + totalLikeNum + psaveCount*3 +
+			(commentedCount+repliedCount)*2 + sueCount*20 - (user.Punishnum)*20
+		db.Model(&user).Update("Score", totalScore)
+	}
 }

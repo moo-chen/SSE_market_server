@@ -2,17 +2,19 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/robfig/cron"
-	"github.com/spf13/viper"
 	"log"
 	"loginTest/common"
 	"loginTest/config"
+	"loginTest/controller"
 	"loginTest/middleware"
 	"loginTest/route"
 	"net/http"
 	"os/exec"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron"
+	"github.com/spf13/viper"
 )
 
 func Copy() {
@@ -37,6 +39,7 @@ func Copy() {
 		}
 		log.Println("备份成功:", backupFile)
 	})
+	c.AddFunc("@daily", controller.CalculateAndSaveScores)
 	c.Start()
 }
 
@@ -69,9 +72,9 @@ func main() {
 
 	log.Printf("Server started on port 8080")
 	select {}
-	//port := viper.GetString("server.port")
-	//if port != "" {
-	//	panic(r.Run(":" + port))
-	//}
-	//panic(r.Run())
+	// port := viper.GetString("server.port")
+	// if port != "" {
+	// 	panic(r.Run(":" + port))
+	// }
+	// panic(r.Run())
 }
