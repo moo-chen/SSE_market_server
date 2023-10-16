@@ -15,4 +15,5 @@ type User struct {
 	Banend    time.Time `gorm:"column:banend;type:datetime"`
 	Punishnum int       `gorm:"column:punishnum;type:int"`
 	AvatarURL string    `gorm:"column:avatar_url;type:varchar(255)"`
+	Score     int       `gorm:"column:score;type:int;default:0"`
 }
