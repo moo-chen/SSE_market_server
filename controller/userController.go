@@ -586,6 +586,7 @@ func GetInfo(c *gin.Context) {
 		"name":   user.Name,
 		//"num":       user.Num,
 		"intro":     user.Intro,
+		"score":     user.Score,
 		"ban":       user.Banend,
 		"punishnum": user.Punishnum,
 		"avatarURL": user.AvatarURL,
