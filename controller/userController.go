@@ -139,7 +139,8 @@ func Register(c *gin.Context) {
 	password2 := requestUser.Password2
 	password1 = util.Decrypt(password1)
 	password2 = util.Decrypt(password2)
-	email := requestUser.Email
+	email := strings.TrimSpace(requestUser.Email)
+	print(email)
 	//num := requestUser.Num
 	valiCode := requestUser.ValiCode
 	cdkey := requestUser.CDKey
