@@ -230,6 +230,10 @@ func PostPcomment(c *gin.Context) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容不能为空")
 		return
 	}
+	if len(msg.Content) > 1000 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容过长")
+		return
+	}
 	if len(msg.UserTelephone) == 0 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "评论人不能为空")
 		return
@@ -328,6 +332,10 @@ func PostCcomment(c *gin.Context) {
 	content := msg.Content
 	if len(content) == 0 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容不能为空")
+		return
+	}
+	if len(content) > 100 {
+		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容过长")
 		return
 	}
 	if len(msg.UserTelephone) == 0 {
