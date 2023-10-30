@@ -54,7 +54,7 @@ func SendEmail(receiver string) error {
 
 	err := e.Send(util.Addr, smtp.PlainAuth("", util.EmailUsername, util.Password, util.Host))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return err
 	}
 	fmt.Println("Send Successfully")
