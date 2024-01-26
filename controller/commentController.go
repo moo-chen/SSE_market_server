@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -230,7 +231,7 @@ func PostPcomment(c *gin.Context) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容不能为空")
 		return
 	}
-	if len(msg.Content) > 1000 {
+	if utf8.RuneCountInString(msg.Content) > 1000 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容过长")
 		return
 	}
@@ -334,7 +335,7 @@ func PostCcomment(c *gin.Context) {
 		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容不能为空")
 		return
 	}
-	if len(content) > 100 {
+	if utf8.RuneCountInString(content) > 100 {
 		response.Response(c, http.StatusBadRequest, 400, nil, "评论内容过长")
 		return
 	}
